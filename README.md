@@ -1,0 +1,1 @@
+Install `tesseract`. On macOS, that's `brew install tesseract --with-all-languages`.
