@@ -1,8 +1,11 @@
 import pytesseract
+from pytesseract import Output
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.filters import threshold_mean, threshold_otsu, try_all_threshold
+import re
+import sys
 
 
 def convert_text_to_table(table_text):
@@ -13,15 +16,31 @@ def convert_text_to_table(table_text):
     return table
 
 
-def add_bounding_boxes_to_image(img):
+def add_bounding_boxes_to_image(image, boxes):
+    # see https://stackoverflow.com/questions/20831612/getting-the-bounding-box-of-the-recognized-words-using-python-tesseract
     # draw the bounding boxes on the image
-    h, w, _ = img.shape  # assumes color image
-    for b in boxes.splitlines():
-        b = b.split(" ")
-        img = cv2.rectangle(
-            img, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2
+    """
+    number_of_boxes = len(data["level"])
+    for i in range(number_of_boxes):
+        x, y, w, h = (
+            data["left"][i],
+            data["top"][i],
+            data["width"][i],
+            data["height"][i],
         )
-    return img
+        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    """
+    height, width, _ = image.shape  # assumes color image
+    for b in boxes.splitlines():
+        _, b1, b2, b3, b4, _ = b.split(" ")
+        image = cv2.rectangle(
+            image,
+            (int(b1), height - int(b2)),
+            (int(b3), height - int(b4)),
+            (0, 255, 0),
+            2,
+        )
+    return image
 
 
 def rgb2gray(rgb):
@@ -47,27 +66,28 @@ def threshold(image):
     plt.show()
 
 
+def remove_consecutive_whitespace(s):
+    # or ' '.join(s.split())
+    return re.sub(" +", " ", s)
+
+
 # filename = "table2.png"
-filename = "hand.jpg"
-
+filename = "images/larger-table.png"
 img = cv2.imread(filename)
-grayed = rgb2gray(img)
-fig, ax = threshold(grayed)
-plt.show()
-import sys
-
-sys.exit()
-cv2.imshow(filename, img)
-cv2.waitKey(0)
 
 tesseract_config = "--psm 6"  # assume a single uniform block of text
-table_text = pytesseract.image_to_string(img, config=tesseract_config)
+image_text = pytesseract.image_to_string(img, config=tesseract_config)
+table_text = remove_consecutive_whitespace(image_text.replace("|", ""))
 print(table_text)
-print(convert_text_to_table(table_text))
+cv2.imshow(filename, img)
+cv2.waitKey(0)
+# print(convert_text_to_table(table_text))
 boxes = pytesseract.image_to_boxes(img, config=tesseract_config)
-print(boxes)
+# data = pytesseract.image_to_data(img, config=tesseract_config, output_type=Output.DICT)
+# print(data.keys())
+# print(boxes)
 # show annotated image and wait for keypress
-img = add_bounding_boxes_to_image(img)
+img = add_bounding_boxes_to_image(img, boxes)
 cv2.imshow(filename, img)
 cv2.waitKey(0)
 
