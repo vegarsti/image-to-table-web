@@ -73,6 +73,8 @@ def remove_consecutive_whitespace(s):
 
 # filename = "table2.png"
 filename = "images/larger-table.png"
+filename = "images/kapital.png"
+# filename = "images/kapital-hard.png"
 img = cv2.imread(filename)
 
 tesseract_config = "--psm 6"  # assume a single uniform block of text
@@ -81,9 +83,15 @@ table_text = remove_consecutive_whitespace(image_text.replace("|", ""))
 print(table_text)
 cv2.imshow(filename, img)
 cv2.waitKey(0)
+import sys
+
+# sys.exit()
 # print(convert_text_to_table(table_text))
 boxes = pytesseract.image_to_boxes(img, config=tesseract_config)
-# data = pytesseract.image_to_data(img, config=tesseract_config, output_type=Output.DICT)
+data = pytesseract.image_to_data(img, config=tesseract_config, output_type=Output.DICT)
+from pprint import pprint
+
+pprint(data)
 # print(data.keys())
 # print(boxes)
 # show annotated image and wait for keypress
