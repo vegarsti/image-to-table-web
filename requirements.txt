@@ -7,3 +7,5 @@ ipython
 pytesseract
 opencv-python
 csvprint
+pandas
+openpyxl
