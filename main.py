@@ -6,26 +6,45 @@ import time
 import statistics
 import itertools
 import csv
+import argparse
 
 try:
     from PIL import Image
 except ImportError:
     import Image
 
-if len(sys.argv) != 3:
-    print("Usage: python main.py [filename] [number_of_columns]")
-    sys.exit()
+parser = argparse.ArgumentParser(
+    description="Extract tabular data from an image using Tesseract OCR.",
+    prog="image2table",
+)
 
-filename = sys.argv[1]
+
+def positive_integer(n):
+    """Parse positive integer, possibly raising error"""
+    message = "must be a positive integer"
+    try:
+        n = int(n)
+    except ValueError:
+        raise argparse.ArgumentTypeError(message)
+    if n > 0:
+        return n
+    else:
+        raise argparse.ArgumentTypeError(message)
+
+
+parser.add_argument("filename", type=str, help="path to image file")
+parser.add_argument("columns", type=positive_integer, help="number of columns")
+args = parser.parse_args()
+
+filename = args.filename
 image = cv2.imread(filename)
 height, width, _ = image.shape  # assumes color image
 picture_size = height * width
 
-number_of_columns = int(sys.argv[2])
-if number_of_columns < 1:
-    print("Must have positive number of columns")
-    sys.exit()
+number_of_columns = args.columns
 
+
+#
 fields_string = "level left top width height conf text"
 fields = fields_string.split()
 
@@ -54,6 +73,8 @@ levels = Counter(box.level for box in boxes)
 
 LINE_LEVEL = 4
 WORD_LEVEL = 5
+
+number_of_lines = levels[LINE_LEVEL]
 
 
 def find_index_of_n_largest(items, n):
