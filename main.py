@@ -1,7 +1,7 @@
 import cv2
 import sys
 import pytesseract
-from collections import namedtuple
+from collections import namedtuple, Counter
 import time
 import statistics
 import itertools
@@ -26,8 +26,6 @@ if number_of_columns < 1:
     print("Must have positive number of columns")
     sys.exit()
 
-# image = Image.open(filename)
-
 fields_string = "level left top width height conf text"
 fields = fields_string.split()
 
@@ -35,6 +33,7 @@ tesseract_config = "--psm 6 -l nor"  # assume a single uniform block of text
 data = pytesseract.image_to_data(
     image, config=tesseract_config, output_type=pytesseract.Output.DICT
 )
+
 for field, values in data.items():
     N = len(values)
 
@@ -51,73 +50,10 @@ for box in boxes:
 
 Box = namedtuple("Box", sorted(boxes[0]))
 boxes = [Box(**box) for box in boxes]
-# print(boxes[0])
+levels = Counter(box.level for box in boxes)
 
-lefts = []
-rights = []
-tops = []
-bottoms = []
-
-for box in boxes:
-    # print(box.left, box.right)
-    lefts.append(box.left)
-    rights.append(box.right)
-    tops.append(box.top)
-    bottoms.append(box.bottom)
-
-
-def boxes_equal(b1, b2):
-    equal_size = b1.size == b2.size
-    equal_top = b1.top == b2.top
-    return equal_size and equal_top
-
-
-def is_box_to_right_of_line(box, x):
-    return box.left > x
-
-
-def is_box_inside_other_box(box1, box2):
-    if boxes_equal(box1, box2):
-        return False
-    size = box1.size < box2.size
-    left = box1.left >= box2.left
-    right = box1.right <= box2.right
-    top = box1.top >= box2.top
-    bottom = box1.bottom <= box2.bottom
-    return size and left and right and top and bottom
-
-
-"""
-cv2.imshow("Some title", image)
-cv2.waitKey(0)
-"""
-
-sorted_boxes = sorted(boxes, key=lambda c: c.size, reverse=True)
-
-number_of_lines = 0
-
-lines = []
-
-line_box = sorted_boxes[3]
-
-show_all_boxes = False
-
-for box_num, box in enumerate(sorted_boxes):
-    count = True
-    previous_box = sorted_boxes[box_num - 1]
-    if boxes_equal(box, previous_box):
-        count = False
-    if box.size > 0.3 * picture_size:  # some threshold
-        count = False
-    if box.text.strip() == "" and count:
-        number_of_lines += 1
-        lines.append(box)
-    if show_all_boxes:
-        image = cv2.rectangle(
-            image, (box.left, box.top), (box.right, box.bottom), (0, 255, 0), 2
-        )
-        cv2.imshow("title", image)
-        cv2.waitKey(0)
+LINE_LEVEL = 4
+WORD_LEVEL = 5
 
 
 def find_index_of_n_largest(items, n):
@@ -132,20 +68,50 @@ def find_index_of_n_largest(items, n):
     return sorted([i + 1 for i in indexes])
 
 
+def get_boxes_at_level(boxes, level):
+    # return bounding boxes, sorted by pixel value of top of bounding box
+    return sorted([box for box in boxes if box.level == level], key=lambda box: box.top)
+
+
+boxes_bounding_lines = get_boxes_at_level(boxes, LINE_LEVEL)
+boxes_bounding_words = get_boxes_at_level(boxes, WORD_LEVEL)
+
+
+def boxes_equal(b1, b2):
+    equal_size = b1.size == b2.size
+    equal_top = b1.top == b2.top
+    return equal_size and equal_top
+
+
+def is_box_inside_other_box(box1, box2):
+    if boxes_equal(box1, box2):
+        return False
+    size = box1.size < box2.size
+    left = box1.left >= box2.left
+    right = box1.right <= box2.right
+    top = box1.top >= box2.top
+    bottom = box1.bottom <= box2.bottom
+    return size and left and right and top and bottom
+
+
+def partition(items, predicate=bool):
+    a, b = itertools.tee((predicate(item), item) for item in items)
+    return ((item for pred, item in a if not pred), (item for pred, item in b if pred))
+
+
 all_divisions = []
 line_dicts = []
-for i, line_box in enumerate(lines):
+for i, line_box in enumerate(boxes_bounding_lines):
     # find those boxes which are inside this line
     line_dict = {}
     line_dict["bounding_box"] = line_box
-    word_boxes = []
-    line_dict["words"] = []
-    for box in sorted_boxes:
-        if is_box_inside_other_box(box, line_box):
-            word_boxes.append(box)
+    word_boxes = [
+        box for box in boxes_bounding_words if is_box_inside_other_box(box, line_box)
+    ]
     line_dict["word_boxes"] = sorted(word_boxes, key=lambda word_box: word_box.left)
     line_dict["words"] = [word_box.text for word_box in line_dict["word_boxes"]]
 
+    # Find horizontal pixel difference between words
     diffs = [
         line_dict["word_boxes"][i].left - line_dict["word_boxes"][i - 1].right
         for i in range(1, len(line_dict["word_boxes"]))
@@ -158,56 +124,26 @@ for i, line_box in enumerate(lines):
         for index in indexes
     ]
     all_divisions.append(divisions)
-    for i, index in enumerate(indexes):
-        if i == 0:
-            start = 0
-            end = indexes[i]
-        else:
-            start = indexes[i - 1]
-            end = indexes[i]
-        group = line_dict["words"][start:end]
-        group_word = " ".join(group)
-        group_words.append(group_word)
-    group = line_dict["words"][end:]
-    group_word = " ".join(group)
-    group_words.append(group_word)
-
-    line_dict["group_words"] = group_words
-
     line_dicts.append(line_dict)
 
-sorted_lines = sorted(line_dicts, key=lambda l: l["bounding_box"].top)
-
 all_midpoints = []
-all_lefts = []
 for divisions in all_divisions:
     midpoints = []
-    lefts = []
     for left, right in divisions:
         midpoints.append(right + (left - right) / 2)
-        lefts.append(left)
     all_midpoints.append(midpoints)
-    all_lefts.append(lefts)
 
 transposed_midpoints = list(zip(*all_midpoints))
-transposed_lefts = list(zip(*all_lefts))
 
 dividing_points = []
 for column_midpoints in transposed_midpoints:
     dividing_points.append(int(max(column_midpoints)))
 
 
-all_lists = []
-
-
-def partition(items, predicate=bool):
-    a, b = itertools.tee((predicate(item), item) for item in items)
-    return ((item for pred, item in a if not pred), (item for pred, item in b if pred))
-
-
 rows_strings = []
 rows = []
-for line_dict in sorted_lines:
+sorted_line_dicts = sorted(line_dicts, key=lambda l: l["bounding_box"].top)
+for line_dict in sorted_line_dicts:
     points_to_left = line_dict["word_boxes"]
     cells = []
     for i, dividing_point in enumerate(dividing_points):
@@ -217,13 +153,17 @@ for line_dict in sorted_lines:
         points_to_left = list(points_to_left)
         points_to_right = list(points_to_right)
         text = " ".join(p.text for p in points_to_left)
-        text = text.replace(",", ".")
+        text = text.replace(",", ".")  # ugly hack!
         cells.append(text)
         points_to_left = points_to_right
     cells.append(" ".join(p.text for p in points_to_left))
-    rows_strings.append(",".join(cells))
+    comma_separated_row = ",".join(cells)
+    rows_strings.append(comma_separated_row)
     rows.append(cells)
+    print(comma_separated_row)
 
+sys.exit()
+# Write to .csv
 filename_csv = filename.split(".")[0] + ".csv"
 with open(filename_csv, "w") as csv_file:
     wr = csv.writer(csv_file, delimiter=",")
