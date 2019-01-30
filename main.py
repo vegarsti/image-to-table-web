@@ -7,6 +7,7 @@ import statistics
 import itertools
 import csv
 import argparse
+import pandas as pd
 
 try:
     from PIL import Image
@@ -32,12 +33,13 @@ def positive_integer(n):
         raise argparse.ArgumentTypeError(message)
 
 
-parser.add_argument("filename", type=str, help="path to image file")
+parser.add_argument("filepath", type=str, help="path to image file")
 parser.add_argument("columns", type=positive_integer, help="number of columns")
 args = parser.parse_args()
 
-filename = args.filename
-image = cv2.imread(filename)
+filepath = args.filepath
+image = cv2.imread(filepath)
+# can add preprocessing steps here!
 height, width, _ = image.shape  # assumes color image
 picture_size = height * width
 
@@ -144,6 +146,7 @@ for i, line_box in enumerate(boxes_bounding_lines):
         (line_dict["word_boxes"][index].left, line_dict["word_boxes"][index - 1].right)
         for index in indexes
     ]
+    line_dict["divisions"] = divisions
     all_divisions.append(divisions)
     line_dicts.append(line_dict)
 
@@ -183,10 +186,28 @@ for line_dict in sorted_line_dicts:
     rows.append(cells)
     print(comma_separated_row)
 
-sys.exit()
-# Write to .csv
-filename_csv = filename.split(".")[0] + ".csv"
-with open(filename_csv, "w") as csv_file:
+
+# Write to files
+
+parent_directory, _, filename_with_ending = filepath.rpartition("/")
+filename_without_ending, _, _ = filename_with_ending.rpartition(".")
+if parent_directory:
+    parent_parent, _, _ = parent_directory.rpartition("/")
+    if parent_parent:
+        prefix = f"{parent_parent}/"
+    else:
+        prefix = ""
+    csv_path = f"{prefix}csvs/{filename_without_ending}.csv"
+    excel_path = f"{prefix}excel_files/{filename_without_ending}.xlsx"
+else:
+    csv_path = f"{filename_without_ending}.csv"
+    excel_path = f"{filename_without_ending}.xlsx"
+
+# Write to csv file
+with open(csv_path, "w+") as csv_file:
     wr = csv.writer(csv_file, delimiter=",")
     for row in rows:
         wr.writerow(row)
+
+df = pd.read_csv(csv_path, header=None)
+df.to_excel(excel_path, header=None, index=False)
