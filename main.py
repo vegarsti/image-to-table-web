@@ -20,6 +20,73 @@ parser = argparse.ArgumentParser(
 )
 
 
+def column_widths(table):
+    """Get the maximum size for each column in table"""
+    return [max(map(len, col)) for col in zip(*table)]
+
+
+def copy_nested_list(l):
+    """Return a copy of list l to one level of nesting"""
+    return [list(i) for i in l]
+
+
+def align_table(table, align):
+    """Return table justified according to align"""
+    widths = column_widths(table)
+    new_table = copy_nested_list(table)
+    for row in new_table:
+        for cell_num, cell in enumerate(row):
+            row[cell_num] = "{:{align}{width}}".format(
+                cell, align=align[cell_num], width=widths[cell_num]
+            )
+    return new_table
+
+
+def add_padding(table, padding):
+    """Return a version of table which is padded according to inputted padding"""
+    new_table = copy_nested_list(table)
+    for i, row in enumerate(new_table):
+        padding_string = " " * padding
+        for j, cell in enumerate(row):
+            left = padding_string
+            right = padding_string
+            if j == 0:
+                left = ""
+            elif j == len(row) - 1:
+                right = ""
+            new_table[i][j] = left + new_table[i][j] + right
+    return new_table
+
+
+def join_columns_with_divider(table, decorator):
+    """Join each line in table with the decorator string between each cell"""
+    return [decorator.join(row) for row in table]
+
+
+def right_strip_lines(lines):
+    """Remove trailing spaces on each line"""
+    return [line.rstrip() for line in lines]
+
+
+def join_formatted_lines(lines):
+    """Return the finished output"""
+    return "\n".join(lines)
+
+
+def pretty_print_table(table):
+    number_of_columns = len(table[0])
+    alignment_operators = {"left": "<", "right": ">"}
+    alignment_subset = alignment_operators["left"] + alignment_operators["right"] * (
+        number_of_columns - 1
+    )
+    justified_table = align_table(table, alignment_subset)
+    padded_table = add_padding(justified_table, padding=1)
+    lines = join_columns_with_divider(padded_table, decorator=" ")
+    lines = right_strip_lines(lines)
+    finished_output = join_formatted_lines(lines)
+    print(finished_output)
+
+
 def positive_integer(n):
     """Parse positive integer, possibly raising error"""
     message = "must be a positive integer"
@@ -35,9 +102,13 @@ def positive_integer(n):
 
 parser.add_argument("filepath", type=str, help="path to image file")
 parser.add_argument("columns", type=positive_integer, help="number of columns")
+parser.add_argument("--show", action="store_true", help="show all bounding boxes")
 args = parser.parse_args()
 
 filepath = args.filepath
+
+print(f"Analyzing {filepath}.")
+
 image = cv2.imread(filepath)
 # can add preprocessing steps here!
 height, width, _ = image.shape  # assumes color image
@@ -45,8 +116,10 @@ picture_size = height * width
 
 number_of_columns = args.columns
 
+if args.show:
+    cv2.imshow(filepath, image)
+    cv2.waitKey(0)
 
-#
 fields_string = "level left top width height conf text"
 fields = fields_string.split()
 
@@ -184,11 +257,14 @@ for line_dict in sorted_line_dicts:
     comma_separated_row = ",".join(cells)
     rows_strings.append(comma_separated_row)
     rows.append(cells)
-    print(comma_separated_row)
 
+# Write output
+print("Printing table.")
+print()
+pretty_print_table(rows)
+print()
 
 # Write to files
-
 parent_directory, _, filename_with_ending = filepath.rpartition("/")
 filename_without_ending, _, _ = filename_with_ending.rpartition(".")
 if parent_directory:
@@ -204,10 +280,12 @@ else:
     excel_path = f"{filename_without_ending}.xlsx"
 
 # Write to csv file
+print(f"Writing csv file {csv_path}.")
 with open(csv_path, "w+") as csv_file:
     wr = csv.writer(csv_file, delimiter=",")
     for row in rows:
         wr.writerow(row)
 
+print(f"Writing excel file {excel_path}.")
 df = pd.read_csv(csv_path, header=None)
 df.to_excel(excel_path, header=None, index=False)
