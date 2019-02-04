@@ -89,7 +89,6 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
     else:
         try:
             image = cv2.imread(filepath)
-            print("did read image")
         except FileNotFoundError:
             print("File not found!")
             sys.exit(1)
@@ -196,31 +195,33 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
             for i in range(1, len(line_dict["word_boxes"]))
         ]
 
-        indexes = find_index_of_n_largest(diffs, number_of_columns)
-        group_words = []
-        divisions = [
-            (
-                line_dict["word_boxes"][index].left,
-                line_dict["word_boxes"][index - 1].right,
-            )
-            for index in indexes
-        ]
-        line_dict["divisions"] = divisions
-        all_divisions.append(divisions)
+        if number_of_columns > 1:
+            indexes = find_index_of_n_largest(diffs, number_of_columns)
+            group_words = []
+            divisions = [
+                (
+                    line_dict["word_boxes"][index].left,
+                    line_dict["word_boxes"][index - 1].right,
+                )
+                for index in indexes
+            ]
+            line_dict["divisions"] = divisions
+            all_divisions.append(divisions)
         line_dicts.append(line_dict)
 
-    all_midpoints = []
-    for divisions in all_divisions:
-        midpoints = []
-        for left, right in divisions:
-            midpoints.append(right + (left - right) / 2)
-        all_midpoints.append(midpoints)
+    if number_of_columns > 1:
+        all_midpoints = []
+        for divisions in all_divisions:
+            midpoints = []
+            for left, right in divisions:
+                midpoints.append(right + (left - right) / 2)
+            all_midpoints.append(midpoints)
 
-    transposed_midpoints = list(zip(*all_midpoints))
+        transposed_midpoints = list(zip(*all_midpoints))
 
-    dividing_points = []
-    for column_midpoints in transposed_midpoints:
-        dividing_points.append(int(max(column_midpoints)))
+        dividing_points = []
+        for column_midpoints in transposed_midpoints:
+            dividing_points.append(int(max(column_midpoints)))
 
     rows_strings = []
     rows = []
@@ -228,19 +229,24 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
     for line_dict in sorted_line_dicts:
         points_to_left = line_dict["word_boxes"]
         cells = []
-        for i, dividing_point in enumerate(dividing_points):
-            points_to_left, points_to_right = partition(
-                points_to_left, lambda word_box: word_box.right > dividing_point
-            )
-            points_to_left = list(points_to_left)
-            points_to_right = list(points_to_right)
-            text = " ".join(p.text for p in points_to_left)
-            text = text.replace(",", ".")  # ugly hack!
-            cells.append(text)
-            points_to_left = points_to_right
-        cells.append(" ".join(p.text for p in points_to_left))
-        comma_separated_row = ",".join(cells)
-        rows_strings.append(comma_separated_row)
+        if number_of_columns > 1:
+            for i, dividing_point in enumerate(dividing_points):
+                points_to_left, points_to_right = partition(
+                    points_to_left, lambda word_box: word_box.right > dividing_point
+                )
+                points_to_left = list(points_to_left)
+                points_to_right = list(points_to_right)
+                text = " ".join(p.text for p in points_to_left)
+                text = text.replace(",", ".")  # ugly hack!
+                cells.append(text)
+                points_to_left = points_to_right
+            cells.append(" ".join(p.text for p in points_to_left))
+            comma_separated_row = ",".join(cells)
+            rows_strings.append(comma_separated_row)
+        else:  # 1 column
+            cell = " ".join(p.text for p in points_to_left)
+            cells = [cell]
+            rows_strings.append(cell)
         rows.append(cells)
 
     # Write output
