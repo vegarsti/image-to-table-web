@@ -5,10 +5,11 @@ from werkzeug.utils import secure_filename
 from api import analyze
 
 UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = set(["txt", "pdf", "png", "jpg", "jpeg", "gif"])
+ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # max allowed image size: 16 MB
 
 
 def allowed_file(filename):
@@ -67,7 +68,8 @@ def analyze_head():
     path = "uploads"
     list_of_files = []
     for filename in os.listdir(path):
-        list_of_files.append(filename)
+        if filename.rsplit()[-1] in ALLOWED_EXTENSIONS:
+            list_of_files.append(filename)
     print(list_of_files)
     items = "".join(
         [
