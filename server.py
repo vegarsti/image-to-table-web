@@ -86,15 +86,30 @@ def analyze_head():
 
 @app.route("/analyze/<filename>")
 def analyze_file(filename):
-    if not filename:
-        return """
-        <!doctype html>
-        <title>Analyze a file</title>
-        <h1>Analyze a file</h1>
+    full_filename = f"/uploads/{filename}"
+    number_of_columns = 2
+    df = analyze(
+        filepath=full_filename,
+        number_of_columns=number_of_columns,
+        show=False,
+        from_flask=True,
+    )
+    return df.to_html()
+
+
+@app.route("/analyze/<filename>/<number_of_columns>")
+def analyze_file_with_number_of_columns(filename, number_of_columns):
+    full_filename = f"/uploads/{filename}"
+    try:
+        number_of_columns = int(number_of_columns)
+    except ValueError:
+        return f"""
+        <h2>Number of columns must be an integer</h2>
         """
-    else:
-        full_filename = f"/uploads/{filename}"
-        df = analyze(
-            filepath=full_filename, number_of_columns=2, show=False, from_flask=True
-        )
-        return df.to_html()
+    df = analyze(
+        filepath=full_filename,
+        number_of_columns=number_of_columns,
+        show=False,
+        from_flask=True,
+    )
+    return df.to_html()
