@@ -17,6 +17,8 @@ ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["EXCEL_DIRECTORY"] = "excel_files"
+app.config["CSV_DIRECTORY"] = "csvs"
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # max allowed image size: 16 MB
 
 
@@ -52,6 +54,16 @@ def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
+@app.route("/excel_files/<filename>")
+def download_excel(filename):
+    return send_from_directory(app.config["EXCEL_DIRECTORY"], filename)
+
+
+@app.route("/csvs/<filename>")
+def download_csv(filename):
+    return send_from_directory(app.config["CSV_DIRECTORY"], filename)
+
+
 @app.route("/analyze/")
 def analyze_head():
     path = "uploads"
@@ -85,7 +97,15 @@ def analyze_file(filename):
         show=False,
         from_flask=True,
     )
-    return render_template("table.html", filename=filename, table_html=df.to_html())
+    csv_filename = filename.rsplit(".")[0] + ".csv"
+    excel_filename = filename.rsplit(".")[0] + ".xlsx"
+    return render_template(
+        "table.html",
+        filename=filename,
+        csv_filename=csv_filename,
+        excel_filename=excel_filename,
+        table_html=df.to_html(),
+    )
 
 
 @app.route("/analyze/<filename>/<number_of_columns>")
@@ -103,7 +123,15 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         show=False,
         from_flask=True,
     )
-    return render_template("table.html", filename=filename, table_html=df.to_html())
+    csv_filename = filename.rsplit(".")[0] + ".csv"
+    excel_filename = filename.rsplit(".")[0] + ".xlsx"
+    return render_template(
+        "table.html",
+        filename=filename,
+        csv_filename=csv_filename,
+        excel_filename=excel_filename,
+        table_html=df.to_html(),
+    )
 
 
 if __name__ == "__main__":
