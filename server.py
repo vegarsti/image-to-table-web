@@ -1,5 +1,13 @@
 import os
-from flask import Flask, flash, request, redirect, url_for, send_from_directory
+from flask import (
+    Flask,
+    flash,
+    request,
+    redirect,
+    url_for,
+    send_from_directory,
+    render_template,
+)
 from flask_table import Table, Col
 from werkzeug.utils import secure_filename
 from api import analyze
@@ -34,17 +42,9 @@ def upload_file():
             print(app.config["UPLOAD_FOLDER"])
             print(filename)
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            return redirect(url_for("uploaded_file", filename=filename))
-    return """
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    <a href="/analyze">View uploaded files</a>
-    """
+            # return redirect(url_for("uploaded_file", filename=filename))
+            return analyze_head()
+    return render_template("index.html")
 
 
 @app.route("/uploads/<filename>")
@@ -52,23 +52,12 @@ def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
-@app.route("/show/filename")
-def show_file(filename):
-    return f"""
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Showing image</h1>
-    <img src='/uploads/{filename}'>
-    <a href="/analyze/{filename}">Analyze image!</a> 
-    """
-
-
 @app.route("/analyze/")
 def analyze_head():
     path = "uploads"
     list_of_files = []
     for filename in os.listdir(path):
-        if filename.rsplit()[-1] in ALLOWED_EXTENSIONS:
+        if filename.rsplit(".")[-1] in ALLOWED_EXTENSIONS:
             list_of_files.append(filename)
     print(list_of_files)
     items = "".join(
@@ -96,7 +85,7 @@ def analyze_file(filename):
         show=False,
         from_flask=True,
     )
-    return df.to_html()
+    return render_template("table.html", filename=filename, table_html=df.to_html())
 
 
 @app.route("/analyze/<filename>/<number_of_columns>")
@@ -114,4 +103,8 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         show=False,
         from_flask=True,
     )
-    return df.to_html()
+    return render_template("table.html", filename=filename, table_html=df.to_html())
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
