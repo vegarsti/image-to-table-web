@@ -9,3 +9,4 @@ opencv-python
 csvprint
 pandas
 openpyxl
+flask
