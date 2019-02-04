@@ -1,6 +1,8 @@
 import os
 from flask import Flask, flash, request, redirect, url_for, send_from_directory
+from flask_table import Table, Col
 from werkzeug.utils import secure_filename
+from api import analyze
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = set(["txt", "pdf", "png", "jpg", "jpeg", "gif"])
@@ -40,10 +42,59 @@ def upload_file():
       <input type=file name=file>
       <input type=submit value=Upload>
     </form>
+    <a href="/analyze">View uploaded files</a>
     """
 
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
-    print("showing uploaded file")
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+
+@app.route("/show/filename")
+def show_file(filename):
+    return f"""
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>Showing image</h1>
+    <img src='/uploads/{filename}'>
+    <a href="/analyze/{filename}">Analyze image!</a> 
+    """
+
+
+@app.route("/analyze/")
+def analyze_head():
+    path = "uploads"
+    list_of_files = []
+    for filename in os.listdir(path):
+        list_of_files.append(filename)
+    print(list_of_files)
+    items = "".join(
+        [
+            f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="{filename}"><h3>Analyze</h3></a></p>'
+            for filename in list_of_files
+        ]
+    )
+    return f"""
+    <!doctype html>
+    <title>Analyze a file</title>
+    <h1><a href="../">Back to home.</a>
+    <h1>Analyze a file</h1>
+    {items}
+    """
+
+
+@app.route("/analyze/<filename>")
+def analyze_file(filename):
+    if not filename:
+        return """
+        <!doctype html>
+        <title>Analyze a file</title>
+        <h1>Analyze a file</h1>
+        """
+    else:
+        full_filename = f"/uploads/{filename}"
+        df = analyze(
+            filepath=full_filename, number_of_columns=2, show=False, from_flask=True
+        )
+        return df.to_html()

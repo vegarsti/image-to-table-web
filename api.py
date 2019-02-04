@@ -8,6 +8,7 @@ import itertools
 import csv
 import argparse
 import pandas as pd
+import numpy as np
 
 
 def column_widths(table):
@@ -77,12 +78,21 @@ def pretty_print_table(table):
     print(finished_output)
 
 
-def analyze(filepath, number_of_columns, show):
-    try:
-        image = cv2.imread(filepath)
-    except FileNotFoundError:
-        print("File not found!")
-        sys.exit(1)
+def analyze(filepath, number_of_columns, show, from_flask=False):
+    print(filepath)
+    if from_flask:
+        with open(filepath[1:], "rb") as file_descriptor:
+            image_string = file_descriptor.read()
+        image = cv2.imdecode(
+            np.fromstring(image_string, np.uint8), cv2.IMREAD_UNCHANGED
+        )
+    else:
+        try:
+            image = cv2.imread(filepath)
+            print("did read image")
+        except FileNotFoundError:
+            print("File not found!")
+            sys.exit(1)
 
     print(f"Analyzing {filepath}.")
     # can add preprocessing steps here!
@@ -264,3 +274,5 @@ def analyze(filepath, number_of_columns, show):
     print(f"Writing excel file {excel_path}.")
     df = pd.read_csv(csv_path, header=None)
     df.to_excel(excel_path, header=None, index=False)
+
+    return df
