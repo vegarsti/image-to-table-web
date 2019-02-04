@@ -64,6 +64,16 @@ def download_csv(filename):
     return send_from_directory(app.config["CSV_DIRECTORY"], filename)
 
 
+@app.route("/delete/<image_filename>")
+def delete_file(image_filename):
+    csv_filename = image_filename.rsplit(".")[0] + ".csv"
+    excel_filename = image_filename.rsplit(".")[0] + ".xlsx"
+    os.remove(os.path.join(app.config["UPLOAD_FOLDER"], image_filename))
+    os.remove(os.path.join(app.config["CSV_DIRECTORY"], csv_filename))
+    os.remove(os.path.join(app.config["EXCEL_DIRECTORY"], excel_filename))
+    return analyze_head()
+
+
 @app.route("/analyze/")
 def analyze_head():
     path = "uploads"
@@ -74,7 +84,7 @@ def analyze_head():
     print(list_of_files)
     items = "".join(
         [
-            f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="{filename}"><h3>Analyze</h3></a></p>'
+            f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="{filename}"><h3>Analyze</h3></a><h2><a href="../delete/{filename}">Delete all files for this image.</a></h2></p>'
             for filename in list_of_files
         ]
     )
