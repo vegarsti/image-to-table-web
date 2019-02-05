@@ -84,7 +84,7 @@ def analyze_head():
     print(list_of_files)
     items = "".join(
         [
-            f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="{filename}"><h3>Analyze</h3></a><h2><a href="../delete/{filename}">Delete all files for this image.</a></h2></p>'
+            f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="../analyze/{filename}"><h3>Analyze 2</h3></a><br /><a href="../analyze/{filename}/3"><h3>Analyze 3</h3></a><br /><h2><a href="../delete/{filename}">Delete all files for this image.</a></h2></p>'
             for filename in list_of_files
         ]
     )
