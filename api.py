@@ -214,7 +214,8 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
         for divisions in all_divisions:
             midpoints = []
             for left, right in divisions:
-                midpoints.append(right + (left - right) / 2)
+                # midpoints.append(right + (left - right) / 2)
+                midpoints.append(right)
             all_midpoints.append(midpoints)
 
         transposed_midpoints = list(zip(*all_midpoints))
