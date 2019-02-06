@@ -2,8 +2,15 @@ import base64
 import os
 
 import pandas as pd
-from flask import (Flask, flash, redirect, render_template, request,
-                   send_from_directory, url_for)
+from flask import (
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
 from flask_table import Col, Table
 from werkzeug.utils import secure_filename
 
