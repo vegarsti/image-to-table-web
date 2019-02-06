@@ -9,7 +9,6 @@
   <input type=file name=file>
   <input type=submit value=Upload>
 </form>
-<br />
 {% if any_files  %}
     <h2>Uploaded files</h2>
     <ul>
@@ -19,8 +18,6 @@
     </ul>
     <h2>Analyze a file</h2>
     <form action="analyze_post" method="POST">
-        <h3>Lorem ipsum</h3>
-
         <select name="filename">
             {% for filename in filenames %}
                 <option value="{{ filename }}">{{ filename }}</option>
