@@ -227,7 +227,11 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
     rows_strings = []
     rows = []
     sorted_line_dicts = sorted(line_dicts, key=lambda l: l["bounding_box"].top)
-    for line_dict in sorted_line_dicts:
+    all_distances = []
+    if number_of_columns > 1:
+        for i in range(number_of_columns - 1):
+            all_distances.append([])
+    for j, line_dict in enumerate(sorted_line_dicts):
         points_to_left = line_dict["word_boxes"]
         cells = []
         if number_of_columns > 1:
@@ -235,8 +239,14 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
                 points_to_left, points_to_right = partition(
                     points_to_left, lambda word_box: word_box.right > dividing_point
                 )
-                points_to_left = list(points_to_left)
-                points_to_right = list(points_to_right)
+                points_to_left = list(
+                    sorted(list(points_to_left), key=lambda box: box.right)
+                )
+                points_to_right = list(
+                    sorted(list(points_to_right), key=lambda box: box.right)
+                )
+                distance = points_to_right[0].left - points_to_left[-1].right
+                all_distances[i].append(distance)
                 text = " ".join(p.text for p in points_to_left)
                 text = text.replace(",", ".")  # ugly hack!
                 cells.append(text)
@@ -249,6 +259,9 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
             cells = [cell]
             rows_strings.append(cell)
         rows.append(cells)
+
+    # print(all_distances)
+    # print(list(min(distances) for distances in all_distances))
 
     # Write output
     print("Printing table.")
