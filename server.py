@@ -93,26 +93,7 @@ def delete_file(image_filename):
     return redirect("/")
 
 
-@app.route("/analyze/")
-def analyze_head():
-    path = "uploads"
-    list_of_files = []
-    for filename in os.listdir(path):
-        if filename.rsplit(".")[-1] in ALLOWED_EXTENSIONS:
-            list_of_files.append(filename)
-    items = "".join(
-        [
-            f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="../analyze/{filename}"><h3>Analyze 2</h3></a><br /><a href="../analyze/{filename}/3"><h3>Analyze 3</h3></a><br /><h2><a href="../delete/{filename}">Delete all files for this image.</a></h2></p>'
-            for filename in list_of_files
-        ]
-    )
-    return f"""
-    <!doctype html>
-    <title>Analyze a file</title>
-    <h1><a href="../">Back to home.</a>
-    <h1>Analyze a file</h1>
-    {items}
-    """
+analyze_cache = {}
 
 
 @app.route("/analyze/<filename>/<number_of_columns>")
@@ -124,12 +105,15 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         return f"""
         <h2>Number of columns must be an integer</h2>
         """
-    df = analyze(
-        filepath=full_filename,
-        number_of_columns=number_of_columns,
-        show=False,
-        from_flask=True,
-    )
+    df = analyze_cache.get((filename, number_of_columns))
+    if df is None:
+        df = analyze(
+            filepath=full_filename,
+            number_of_columns=number_of_columns,
+            show=False,
+            from_flask=True,
+        )
+        analyze_cache[(filename, number_of_columns)] = df
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
     csv_filename = filename.rsplit(".")[0] + ".csv"
