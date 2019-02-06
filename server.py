@@ -74,22 +74,24 @@ def download_csv(filename):
     return send_from_directory(app.config["CSV_DIRECTORY"], filename)
 
 
-@app.route("/delete/<image_filename>")
-def delete_file(image_filename):
-    csv_filename = image_filename.rsplit(".")[0] + ".csv"
-    excel_filename = image_filename.rsplit(".")[0] + ".xlsx"
-    try:
-        os.remove(os.path.join(app.config["UPLOAD_FOLDER"], image_filename))
-    except FileNotFoundError:
-        pass
-    try:
-        os.remove(os.path.join(app.config["CSV_DIRECTORY"], csv_filename))
-    except FileNotFoundError:
-        pass
-    try:
-        os.remove(os.path.join(app.config["EXCEL_DIRECTORY"], excel_filename))
-    except FileNotFoundError:
-        pass
+@app.route("/delete", methods=["POST"])
+def delete_file():
+    if request.method == "POST":
+        image_filename = request.form.get("image_filename", "")
+        csv_filename = image_filename.rsplit(".")[0] + ".csv"
+        excel_filename = image_filename.rsplit(".")[0] + ".xlsx"
+        try:
+            os.remove(os.path.join(app.config["UPLOAD_FOLDER"], image_filename))
+        except FileNotFoundError:
+            pass
+        try:
+            os.remove(os.path.join(app.config["CSV_DIRECTORY"], csv_filename))
+        except FileNotFoundError:
+            pass
+        try:
+            os.remove(os.path.join(app.config["EXCEL_DIRECTORY"], excel_filename))
+        except FileNotFoundError:
+            pass
     return redirect("/")
 
 

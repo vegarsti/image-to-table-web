@@ -13,7 +13,9 @@
     <h2>Uploaded files</h2>
     <ul>
     {% for filename in filenames %}
-        <li><a href="uploads/{{ filename }}">{{ filename }}</a>&nbsp;<a href="delete/{{ filename }}">Delete file and corresponding files.</a></option>
+        <li>
+            <a href="uploads/{{ filename }}">{{ filename }}</a>
+        </li>
     {% endfor %}
     </ul>
     <h2>Analyze a file</h2>
@@ -32,6 +34,15 @@
         
         <input type="submit" value="Analyze">
     </form>
+    <h2>Delete files</h2>
+        <form action="delete" method="POST">
+            <select name="image_filename">
+                {% for filename in filenames %}
+                    <option value="{{ filename }}">{{ filename }}</option>
+                {% endfor %}
+            </select>
+            <input type="submit" value="Delete file">
+        </form>
 {% endif %}
 </body>
 </html>
