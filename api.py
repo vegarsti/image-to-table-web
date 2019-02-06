@@ -9,6 +9,7 @@ import csv
 import argparse
 import pandas as pd
 import numpy as np
+from sanitize import sanitize
 
 
 def column_widths(table):
@@ -248,7 +249,7 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
                 distance = points_to_right[0].left - points_to_left[-1].right
                 all_distances[i].append(distance)
                 text = " ".join(p.text for p in points_to_left)
-                text = text.replace(",", ".")  # ugly hack!
+                # text = text.replace(",", ".")  # ugly hack!
                 cells.append(text)
                 points_to_left = points_to_right
             cells.append(" ".join(p.text for p in points_to_left))
@@ -258,7 +259,8 @@ def analyze(filepath, number_of_columns, show, from_flask=False):
             cell = " ".join(p.text for p in points_to_left)
             cells = [cell]
             rows_strings.append(cell)
-        rows.append(cells)
+        sanitized_cells = sanitize(cells)
+        rows.append(sanitized_cells)
 
     # print(all_distances)
     # print(list(min(distances) for distances in all_distances))
