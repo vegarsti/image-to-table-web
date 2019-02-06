@@ -10,6 +10,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from sanitize import sanitize
+import base64
 
 
 def column_widths(table):
@@ -79,20 +80,21 @@ def pretty_print_table(table):
     print(finished_output)
 
 
-def analyze(filepath, number_of_columns, show, from_flask=False):
-    print(filepath)
-    if from_flask:
-        with open(filepath[1:], "rb") as file_descriptor:
+def image_to_base64(filepath):
+    try:
+        with open(filepath, "rb") as file_descriptor:
             image_string = file_descriptor.read()
-        image = cv2.imdecode(
-            np.fromstring(image_string, np.uint8), cv2.IMREAD_UNCHANGED
-        )
-    else:
-        try:
-            image = cv2.imread(filepath)
-        except FileNotFoundError:
-            print("File not found!")
-            sys.exit(1)
+    except FileNotFoundError:
+        print("File not found!")
+        sys.exit(1)
+    base64_encoded_image = base64.b64encode(image_string)
+    return base64_encoded_image
+
+
+def analyze(base64_encoded_image, number_of_columns, show, filepath):
+    image_string = base64.b64decode(base64_encoded_image)
+    image_as_byte_array = np.fromstring(image_string, np.uint8)
+    image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
 
     print(f"Analyzing {filepath}.")
     # can add preprocessing steps here!

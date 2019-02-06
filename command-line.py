@@ -1,6 +1,6 @@
 import argparse
 import sys
-from api import analyze
+from api import analyze, image_to_base64
 
 try:
     from PIL import Image
@@ -31,4 +31,10 @@ parser.add_argument("columns", type=positive_integer, help="number of columns")
 parser.add_argument("--show", action="store_true", help="show all bounding boxes")
 args = parser.parse_args()
 
-analyze(filepath=args.filepath, number_of_columns=args.columns, show=args.show)
+base64_encoded_image = image_to_base64(args.filepath)
+analyze(
+    base64_encoded_image=base64_encoded_image,
+    number_of_columns=args.columns,
+    show=args.show,
+    filepath=args.filepath,
+)

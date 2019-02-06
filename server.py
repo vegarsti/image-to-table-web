@@ -12,6 +12,7 @@ from flask_table import Table, Col
 from werkzeug.utils import secure_filename
 from api import analyze
 import pandas as pd
+import base64
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
@@ -125,11 +126,18 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         """
     df = analyze_cache.get((filename, number_of_columns))
     if df is None:
+        cleaned_filename = full_filename[1:]
+        try:
+            with open(cleaned_filename, "rb") as file_descriptor:
+                image_string = file_descriptor.read()
+                base64_encoded_image = base64.b64encode(image_string)
+        except FileNotFoundError:
+            redirect("/", error="File not found!")
         df = analyze(
-            filepath=full_filename,
+            base64_encoded_image=base64_encoded_image,
             number_of_columns=number_of_columns,
             show=False,
-            from_flask=True,
+            filepath=cleaned_filename,
         )
         analyze_cache[(filename, number_of_columns)] = df
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
