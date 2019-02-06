@@ -1,4 +1,5 @@
 import argparse
+import sys
 from api import analyze
 
 try:
@@ -8,7 +9,7 @@ except ImportError:
 
 parser = argparse.ArgumentParser(
     description="Extract tabular data from an image using Tesseract OCR.",
-    prog="image2table",
+    prog=sys.argv[0],
 )
 
 
