@@ -9,9 +9,8 @@ def is_numerical(cell):
     return percentage_numerical > 0.5
 
 
-def make_cell_numerical(cell, characters_to_remove):
-    replace_dict = {character: "" for character in characters_to_remove}
-    regex_replace = dict((re.escape(k), v) for k, v in replace_dict.items())
+def make_cell_numerical(cell, full_dictionary):
+    regex_replace = dict((re.escape(k), v) for k, v in full_dictionary.items())
     pattern = re.compile("|".join(regex_replace.keys()))
     cleaned_cell = pattern.sub(lambda m: regex_replace[re.escape(m.group(0))], cell)
     return cleaned_cell
@@ -19,10 +18,13 @@ def make_cell_numerical(cell, characters_to_remove):
 
 def sanitize(items):
     characters_to_remove = ["|", " "]
+    remove_dictionary = {character: "" for character in characters_to_remove}
+    replacement_dictionary = {"—": "-"}
+    full_dictionary = {**replacement_dictionary, **remove_dictionary}
     new_items = []
     for cell in items:
         if is_numerical(cell):
-            new_items.append(make_cell_numerical(cell, characters_to_remove))
+            new_items.append(make_cell_numerical(cell, full_dictionary))
         else:
             new_items.append(cell)
     return new_items
