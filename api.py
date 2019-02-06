@@ -299,4 +299,4 @@ def analyze(base64_encoded_image, number_of_columns, show, filepath):
     df = pd.read_csv(csv_path, header=None)
     df.to_excel(excel_path, header=None, index=False)
 
-    return df
+    return df.to_json()

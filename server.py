@@ -133,12 +133,13 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
                 base64_encoded_image = base64.b64encode(image_string)
         except FileNotFoundError:
             redirect("/", error="File not found!")
-        df = analyze(
+        df_json = analyze(
             base64_encoded_image=base64_encoded_image,
             number_of_columns=number_of_columns,
             show=False,
             filepath=cleaned_filename,
         )
+        df = pd.read_json(df_json)
         analyze_cache[(filename, number_of_columns)] = df
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
