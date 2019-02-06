@@ -1,16 +1,18 @@
-import cv2
-import sys
-import pytesseract
-from collections import namedtuple, Counter
-import time
-import statistics
-import itertools
-import csv
 import argparse
-import pandas as pd
-import numpy as np
-from sanitize import sanitize
 import base64
+import csv
+import itertools
+import json
+import statistics
+import sys
+import time
+from collections import Counter, namedtuple
+
+import cv2
+import numpy as np
+import pandas as pd
+import pytesseract
+from sanitize import sanitize
 
 
 def column_widths(table):
@@ -91,27 +93,34 @@ def image_to_base64(filepath):
     return base64_encoded_image
 
 
-def analyze(base64_encoded_image, number_of_columns, show, filepath):
+def tesseract_specific_code(base64_encoded_image):
     image_string = base64.b64decode(base64_encoded_image)
     image_as_byte_array = np.fromstring(image_string, np.uint8)
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
-
-    print(f"Analyzing {filepath}.")
-    # can add preprocessing steps here!
-    height, width, _ = image.shape  # assumes color image
-    picture_size = height * width
-
-    if show:
-        cv2.imshow(filepath, image)
-        cv2.waitKey(0)
-
-    fields_string = "level left top width height conf text"
-    fields = fields_string.split()
-
     tesseract_config = "--psm 6 -l nor"  # assume a single uniform block of text
     data = pytesseract.image_to_data(
         image, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
+    data["shape"] = image.shape
+    return json.dumps(data)
+
+
+def analyze(base64_encoded_image, number_of_columns, show, filepath):
+    if show:
+        image_string = base64.b64decode(base64_encoded_image)
+        image_as_byte_array = np.fromstring(image_string, np.uint8)
+        image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
+        cv2.imshow(filepath, image)
+        cv2.waitKey(0)
+
+    print(f"Analyzing {filepath}.")
+    data = json.loads(tesseract_specific_code(base64_encoded_image))
+    # can add preprocessing steps here!
+    height, width, _ = data.pop("shape", None)  # assumes color image
+    picture_size = height * width
+
+    fields_string = "level left top width height conf text"
+    fields = fields_string.split()
 
     for field, values in data.items():
         N = len(values)
