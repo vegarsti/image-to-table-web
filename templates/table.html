@@ -2,14 +2,26 @@
 <html>
 <head>
     <title>{{ filename }}</title>
+    <style>
+        img { float: right; }
+    </style>
 </head>
 <body>
-    <h2><a href="../../">Back to homepage.</a></h2>
-    <h2><a href="../../csvs/{{ csv_filename }}">Download as csv file.</a></h2>
-    <h2><a href="../../excel_files/{{ excel_filename }}">Download as excel file.</a></h2>
+    <img src="../../uploads/{{ filename }}">
     <h1>{{ filename }}</h1>
     {{ table_html | safe }}
-    <br />
-    <img src="../../uploads/{{ filename }}">
+    <h2>Download</h2>
+    <form action="download" method="POST">
+        <select name="filename">
+            <option value="{{ filename }}">{{ filename }}</option>
+        </select>
+        <select name="filetype">
+            {% for filetype in filetypes %}
+                <option value="{{ filetype }}">{{ filetype }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="Download file">
+    </form>
+    <h2><a href="../../">Back to homepage.</a></h2>
 </body>
 </html>

@@ -74,6 +74,22 @@ def download_csv(filename):
     return send_from_directory(app.config["CSV_DIRECTORY"], filename)
 
 
+@app.route("/download", methods=["POST"])
+def download():
+    if request.method == "POST":
+        filetype = request.form.get("filetype")
+        image_filename = request.form.get("filename")
+        if filetype is not None:
+            if filetype == "csv":
+                csv_filename = image_filename.rsplit(".")[0] + ".csv"
+                return redirect(url_for(".download_csv", filename=csv_filename))
+            elif filetype == "excel":
+                excel_filename = image_filename.rsplit(".")[0] + ".xlsx"
+                return redirect(url_for(".download_excel", filename=excel_filename))
+    else:
+        redirect("/")
+
+
 @app.route("/delete", methods=["POST"])
 def delete_file():
     if request.method == "POST":
@@ -118,14 +134,9 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         analyze_cache[(filename, number_of_columns)] = df
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
-    csv_filename = filename.rsplit(".")[0] + ".csv"
-    excel_filename = filename.rsplit(".")[0] + ".xlsx"
+    filetypes = ["csv", "excel"]
     return render_template(
-        "table.html",
-        filename=filename,
-        csv_filename=csv_filename,
-        excel_filename=excel_filename,
-        table_html=df.to_html(),
+        "table.html", filename=filename, filetypes=filetypes, table_html=df.to_html()
     )
 
 
