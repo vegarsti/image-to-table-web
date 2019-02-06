@@ -1,18 +1,13 @@
-import os
-from flask import (
-    Flask,
-    flash,
-    request,
-    redirect,
-    url_for,
-    send_from_directory,
-    render_template,
-)
-from flask_table import Table, Col
-from werkzeug.utils import secure_filename
-from api import analyze
-import pandas as pd
 import base64
+import os
+
+import pandas as pd
+from flask import (Flask, flash, redirect, render_template, request,
+                   send_from_directory, url_for)
+from flask_table import Col, Table
+from werkzeug.utils import secure_filename
+
+from api import analyze
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
@@ -133,7 +128,9 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
                 base64_encoded_image = base64.b64encode(image_string)
         except FileNotFoundError:
             redirect("/", error="File not found!")
+        image_json = {"base64_image": base64_encoded_image}
         df_json = analyze(
+            image_json=image_json,
             base64_encoded_image=base64_encoded_image,
             number_of_columns=number_of_columns,
             show=False,

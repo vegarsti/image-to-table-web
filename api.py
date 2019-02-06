@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
+
 from sanitize import sanitize
 
 
@@ -82,7 +83,7 @@ def pretty_print_table(table):
     print(finished_output)
 
 
-def image_to_base64(filepath):
+def image_to_base64_json(filepath):
     try:
         with open(filepath, "rb") as file_descriptor:
             image_string = file_descriptor.read()
@@ -90,10 +91,12 @@ def image_to_base64(filepath):
         print("File not found!")
         sys.exit(1)
     base64_encoded_image = base64.b64encode(image_string)
-    return base64_encoded_image
+    image_json = {"base64_image": base64_encoded_image}
+    return image_json
 
 
-def tesseract_specific_code(base64_encoded_image):
+def tesseract_specific_code(image_json):
+    base64_encoded_image = image_json.get("base64_image")
     image_string = base64.b64decode(base64_encoded_image)
     image_as_byte_array = np.fromstring(image_string, np.uint8)
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
@@ -105,8 +108,9 @@ def tesseract_specific_code(base64_encoded_image):
     return json.dumps(data)
 
 
-def analyze(base64_encoded_image, number_of_columns, show, filepath):
+def analyze(image_json, number_of_columns, show, filepath):
     if show:
+        base64_encoded_image = image_json.get("base64_image")
         image_string = base64.b64decode(base64_encoded_image)
         image_as_byte_array = np.fromstring(image_string, np.uint8)
         image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
@@ -114,7 +118,7 @@ def analyze(base64_encoded_image, number_of_columns, show, filepath):
         cv2.waitKey(0)
 
     print(f"Analyzing {filepath}.")
-    data = json.loads(tesseract_specific_code(base64_encoded_image))
+    data = json.loads(tesseract_specific_code(image_json))
     # can add preprocessing steps here!
     height, width, _ = data.pop("shape", None)  # assumes color image
     picture_size = height * width
