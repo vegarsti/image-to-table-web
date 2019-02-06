@@ -9,6 +9,9 @@
   <input type=file name=file>
   <input type=submit value=Upload>
 </form>
+{% if error %}
+    <h3 style="color: red;">Error: {{ error }}</h3>
+{% endif %}
 {% if any_files  %}
     <h2>Uploaded files</h2>
     <ul>

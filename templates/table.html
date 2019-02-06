@@ -15,12 +15,14 @@
         <select name="filename">
             <option value="{{ filename }}">{{ filename }}</option>
         </select>
+        as a
         <select name="filetype">
             {% for filetype in filetypes %}
                 <option value="{{ filetype }}">{{ filetype }}</option>
             {% endfor %}
         </select>
-        <input type="submit" value="Download file">
+        file
+        <input type="submit" value="Download">
     </form>
     <h2><a href="../../">Back to homepage.</a></h2>
 </body>
