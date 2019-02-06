@@ -1,0 +1,26 @@
+<!doctype html>
+<head>
+<title>Analyze a file</title>
+</head>
+<body>
+<h1><a href="../">Back to home.</a>
+<h1>Analyze a file</h1>
+<form action="analyze_post" method="POST">
+    <h3>Lorem ipsum</h3>
+
+    <select name="filename">
+        {% for filename in filenames %}
+            <option value="{{ filename }}">{{ filename }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="columns">
+        {% for columns in columns_options %}
+            <option value="{{ columns }}">{{ columns }}</option>
+        {% endfor %}
+    </select>
+    
+    <input type="submit" value="Analyze">
+</form>
+</body>
+</html>

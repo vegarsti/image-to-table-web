@@ -11,6 +11,7 @@ from flask import (
 from flask_table import Table, Col
 from werkzeug.utils import secure_filename
 from api import analyze
+import pandas as pd
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
@@ -41,12 +42,21 @@ def upload_file():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            print(app.config["UPLOAD_FOLDER"])
-            print(filename)
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             # return redirect(url_for("uploaded_file", filename=filename))
-            return analyze_head()
-    return render_template("index.html")
+    path = "uploads"
+    list_of_files = []
+    for filename in os.listdir(path):
+        if filename.rsplit(".")[-1] in ALLOWED_EXTENSIONS:
+            list_of_files.append(filename)
+    columns = list(range(1, 5))
+    any_files = len(list_of_files) > 0
+    return render_template(
+        "index.html",
+        filenames=list_of_files,
+        columns_options=columns,
+        any_files=any_files,
+    )
 
 
 @app.route("/uploads/<filename>")
@@ -68,10 +78,19 @@ def download_csv(filename):
 def delete_file(image_filename):
     csv_filename = image_filename.rsplit(".")[0] + ".csv"
     excel_filename = image_filename.rsplit(".")[0] + ".xlsx"
-    os.remove(os.path.join(app.config["UPLOAD_FOLDER"], image_filename))
-    os.remove(os.path.join(app.config["CSV_DIRECTORY"], csv_filename))
-    os.remove(os.path.join(app.config["EXCEL_DIRECTORY"], excel_filename))
-    return analyze_head()
+    try:
+        os.remove(os.path.join(app.config["UPLOAD_FOLDER"], image_filename))
+    except FileNotFoundError:
+        pass
+    try:
+        os.remove(os.path.join(app.config["CSV_DIRECTORY"], csv_filename))
+    except FileNotFoundError:
+        pass
+    try:
+        os.remove(os.path.join(app.config["EXCEL_DIRECTORY"], excel_filename))
+    except FileNotFoundError:
+        pass
+    return redirect("/")
 
 
 @app.route("/analyze/")
@@ -81,7 +100,6 @@ def analyze_head():
     for filename in os.listdir(path):
         if filename.rsplit(".")[-1] in ALLOWED_EXTENSIONS:
             list_of_files.append(filename)
-    print(list_of_files)
     items = "".join(
         [
             f'<p><h2>{filename}</h2><br /><img src="../uploads/{filename}"><br /><a href="../analyze/{filename}"><h3>Analyze 2</h3></a><br /><a href="../analyze/{filename}/3"><h3>Analyze 3</h3></a><br /><h2><a href="../delete/{filename}">Delete all files for this image.</a></h2></p>'
@@ -95,27 +113,6 @@ def analyze_head():
     <h1>Analyze a file</h1>
     {items}
     """
-
-
-@app.route("/analyze/<filename>")
-def analyze_file(filename):
-    full_filename = f"/uploads/{filename}"
-    number_of_columns = 2
-    df = analyze(
-        filepath=full_filename,
-        number_of_columns=number_of_columns,
-        show=False,
-        from_flask=True,
-    )
-    csv_filename = filename.rsplit(".")[0] + ".csv"
-    excel_filename = filename.rsplit(".")[0] + ".xlsx"
-    return render_template(
-        "table.html",
-        filename=filename,
-        csv_filename=csv_filename,
-        excel_filename=excel_filename,
-        table_html=df.to_html(),
-    )
 
 
 @app.route("/analyze/<filename>/<number_of_columns>")
@@ -133,6 +130,8 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         show=False,
         from_flask=True,
     )
+    df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
+    df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
     csv_filename = filename.rsplit(".")[0] + ".csv"
     excel_filename = filename.rsplit(".")[0] + ".xlsx"
     return render_template(
@@ -142,6 +141,20 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         excel_filename=excel_filename,
         table_html=df.to_html(),
     )
+
+
+@app.route("/analyze_post", methods=["POST"])
+def analyze_post():
+    assert request.method == "POST"
+    form_options = {}
+    for key in request.form:
+        try:
+            form_options[key] = int(request.form[key])
+        except:
+            form_options[key] = request.form[key]
+    filename = form_options.get("filename")
+    number_of_columns = form_options.get("columns")
+    return analyze_file_with_number_of_columns(filename, number_of_columns)
 
 
 if __name__ == "__main__":

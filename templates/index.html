@@ -1,8 +1,40 @@
 <!doctype html>
-<title>Upload new File</title>
-<h1>Upload new File</h1>
+<head>
+<title>Upload new image</title>
+</head>
+<body>
+<h1>Extract table from image</h1>
+<h2>Upload new File</h2>
 <form method=post enctype=multipart/form-data>
   <input type=file name=file>
   <input type=submit value=Upload>
 </form>
-<a href="/analyze">View uploaded files</a>
+<br />
+{% if any_files  %}
+    <h2>Uploaded files</h2>
+    <ul>
+    {% for filename in filenames %}
+        <li><a href="uploads/{{ filename }}">{{ filename }}</a>&nbsp;<a href="delete/{{ filename }}">Delete file and corresponding files.</a></option>
+    {% endfor %}
+    </ul>
+    <h2>Analyze a file</h2>
+    <form action="analyze_post" method="POST">
+        <h3>Lorem ipsum</h3>
+
+        <select name="filename">
+            {% for filename in filenames %}
+                <option value="{{ filename }}">{{ filename }}</option>
+            {% endfor %}
+        </select>
+        
+        <select name="columns">
+            {% for columns in columns_options %}
+                <option value="{{ columns }}">{{ columns }}</option>
+            {% endfor %}
+        </select>
+        
+        <input type="submit" value="Analyze">
+    </form>
+{% endif %}
+</body>
+</html>
