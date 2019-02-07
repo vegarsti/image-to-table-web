@@ -69,13 +69,11 @@ def join_formatted_lines(lines):
     return "\n".join(lines)
 
 
-def pretty_print_table(table):
+def pretty_print_table(table, alignment_list):
     number_of_columns = len(table[0])
     alignment_operators = {"left": "<", "right": ">"}
-    alignment_subset = alignment_operators["left"] + alignment_operators["right"] * (
-        number_of_columns - 1
-    )
-    justified_table = align_table(table, alignment_subset)
+    alignment_options = [alignment_operators[alignment] for alignment in alignment_list]
+    justified_table = align_table(table, alignment_options)
     padded_table = add_padding(justified_table, padding=1)
     lines = join_columns_with_divider(padded_table, decorator=" ")
     lines = right_strip_lines(lines)
@@ -286,7 +284,7 @@ def analyze(image_json, number_of_columns, show, filepath):
             rows_strings.append(cell)
         sanitized_cells = sanitize(cells)
         rows.append(sanitized_cells)
-    column_orientations = []
+    alignment_list = []
     for i, column_distances in enumerate(all_distances):
         left, right = [
             [distances_in_row[i] for distances_in_row in column_distances]
@@ -297,14 +295,14 @@ def analyze(image_json, number_of_columns, show, filepath):
             ("right", statistics.stdev(right)),
             key=lambda t: t[1],
         )[0]
-        column_orientations.append(this_column_orientation)
-    print(column_orientations)
+        alignment_list.append(this_column_orientation)
+    print(alignment_list)
     # print(list(min(distances) for distances in all_distances))
 
     # Write output
     print("Printing table.")
     print()
-    pretty_print_table(rows)
+    pretty_print_table(rows, alignment_list)
     print()
 
     # Write to files
