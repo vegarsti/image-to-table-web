@@ -140,14 +140,15 @@ def analyze(image_json, number_of_columns, show, filepath):
         box["bottom"] = box["top"] + box["height"]
         box["size"] = box["width"] * box["height"]
 
-    Box = namedtuple("Box", sorted(boxes[0]))
+    example_box = boxes[0]
+    Box = namedtuple("Box", sorted(example_box))
     boxes = [Box(**box) for box in boxes]
-    levels = Counter(box.level for box in boxes)
+    levels_counter = Counter(box.level for box in boxes)
 
     LINE_LEVEL = 4
     WORD_LEVEL = 5
 
-    number_of_lines = levels[LINE_LEVEL]
+    number_of_lines = levels_counter[LINE_LEVEL]
 
     def find_index_of_n_largest(items, n):
         # assume items is sorted list with positive numbers of diffs
@@ -244,40 +245,60 @@ def analyze(image_json, number_of_columns, show, filepath):
     rows = []
     sorted_line_dicts = sorted(line_dicts, key=lambda l: l["bounding_box"].top)
     all_distances = []
-    if number_of_columns > 1:
-        for i in range(number_of_columns - 1):
-            all_distances.append([])
+    for i in range(number_of_columns):
+        all_distances.append([])
+    right_points = dividing_points
     for j, line_dict in enumerate(sorted_line_dicts):
-        points_to_left = line_dict["word_boxes"]
+        boxes_to_left = line_dict["word_boxes"]
         cells = []
         if number_of_columns > 1:
-            for i, dividing_point in enumerate(dividing_points):
-                points_to_left, points_to_right = partition(
-                    points_to_left, lambda word_box: word_box.right > dividing_point
+            left_point = 0
+            for i, right_point in enumerate(right_points):
+                boxes_to_left, boxes_to_right = partition(
+                    boxes_to_left, lambda word_box: word_box.right > right_point
                 )
-                points_to_left = list(
-                    sorted(list(points_to_left), key=lambda box: box.right)
+                boxes_to_left = list(
+                    sorted(list(boxes_to_left), key=lambda box: box.right)
                 )
-                points_to_right = list(
-                    sorted(list(points_to_right), key=lambda box: box.right)
+                boxes_to_right = list(
+                    sorted(list(boxes_to_right), key=lambda box: box.right)
                 )
-                distance = points_to_right[0].left - points_to_left[-1].right
-                all_distances[i].append(distance)
-                text = " ".join(p.text for p in points_to_left)
+                distance_to_right = right_point - boxes_to_left[-1].right
+                distance_to_left = boxes_to_left[0].left - left_point
+                distances = (distance_to_left, distance_to_right)
+                all_distances[i].append(distances)
+                text = " ".join(p.text for p in boxes_to_left)
                 # text = text.replace(",", ".")  # ugly hack!
                 cells.append(text)
-                points_to_left = points_to_right
-            cells.append(" ".join(p.text for p in points_to_left))
+                boxes_to_left = boxes_to_right
+                left_point = right_point
+            right_point = width
+            distance_to_right = right_point - boxes_to_left[-1].right
+            distance_to_left = boxes_to_left[0].left - left_point
+            distances = (distance_to_left, distance_to_right)
+            all_distances[(number_of_columns - 1)].append(distances)
+            cells.append(" ".join(p.text for p in boxes_to_left))
             comma_separated_row = ",".join(cells)
             rows_strings.append(comma_separated_row)
         else:  # 1 column
-            cell = " ".join(p.text for p in points_to_left)
+            cell = " ".join(p.text for p in boxes_to_left)
             cells = [cell]
             rows_strings.append(cell)
         sanitized_cells = sanitize(cells)
         rows.append(sanitized_cells)
-
-    # print(all_distances)
+    column_orientations = []
+    for i, column_distances in enumerate(all_distances):
+        left, right = [
+            [distances_in_row[i] for distances_in_row in column_distances]
+            for i in range(2)
+        ]
+        this_column_orientation = min(
+            ("left", statistics.stdev(left)),
+            ("right", statistics.stdev(right)),
+            key=lambda t: t[1],
+        )[0]
+        column_orientations.append(this_column_orientation)
+    print(column_orientations)
     # print(list(min(distances) for distances in all_distances))
 
     # Write output
