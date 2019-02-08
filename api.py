@@ -330,5 +330,5 @@ def analyze(image_json, number_of_columns, show, filepath):
     print(f"Writing excel file {excel_path}.")
     df = pd.read_csv(csv_path, header=None)
     df.to_excel(excel_path, header=None, index=False)
-
-    return df.to_json()
+    return df
+    # return df.to_json()
