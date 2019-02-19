@@ -1,6 +1,7 @@
 import boto3
 import botocore
 import uuid
+import json
 
 
 def create_bucket(bucket_name):
@@ -84,3 +85,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def lambda_funcs():
+    client = boto3.client("lambda")
+    response = client.list_functions()
+    lambda_name = response["Functions"][0]["FunctionName"]
+    event = {"first_name": "Vegard", "last_name": "Stikbakke"}
+    event_json = json.dumps(event)
+    resp = client.invoke(FunctionName=lambda_name, Payload=event_json)
+    function_response = resp["Payload"].read()
+    print(function_response)
