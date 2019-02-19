@@ -10,3 +10,4 @@ csvprint
 pandas
 openpyxl
 flask
+boto3
