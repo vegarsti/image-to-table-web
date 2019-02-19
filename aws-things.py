@@ -1,5 +1,6 @@
 import boto3
 import botocore
+import uuid
 
 
 def create_bucket(bucket_name):
@@ -10,16 +11,21 @@ def create_bucket(bucket_name):
     )
 
 
-def put_image_file_in_bucket(bucket_name, local_filename, remote_filename):
+def put_image_file_in_bucket(bucket_name, local_filename):
     s3 = boto3.resource("s3")
     image_binary_data = open(local_filename, "rb").read()
+    unique_title = uuid.uuid4().hex
+    folder = unique_title[:2]
+    subfolder = unique_title[2:4]
+    full_filepath = f"{folder}/{subfolder}/{unique_title}"
     s3.Bucket(bucket_name).put_object(
-        Key=remote_filename,
+        Key=full_filepath,
         Body=image_binary_data,
         ContentType="image",
         ACL="public-read",
     )
-    url = f"{bucket_name}.s3.amazonaws.com/{remote_filename}"
+    # bucket could be the hash of the user's email?
+    url = f"{bucket_name}.s3.amazonaws.com/{full_filepath}"
     return url
 
 
@@ -61,11 +67,12 @@ def delete_bucket(bucket_name):
 def main():
     bucket_name = "vegarsti"
     delete_bucket(bucket_name)
-    # create_bucket(bucket_name)
-    # local_filename = "images/kapital-small.png"
-    # remote_filename = "lol.png"
-    # url = put_image_file_in_bucket(bucket_name, local_filename, remote_filename)
-    # print(url)
+    """
+    create_bucket(bucket_name)
+    local_filename = "images/kapital-small.png"
+    url = put_image_file_in_bucket(bucket_name, local_filename)
+    print(url)
+    """
 
     # Print name of all buckets
     """
