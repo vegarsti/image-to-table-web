@@ -13,8 +13,14 @@ def create_bucket(bucket_name):
 def put_image_file_in_bucket(bucket_name, local_filename, remote_filename):
     s3 = boto3.resource("s3")
     image_binary_data = open(local_filename, "rb").read()
-    remote_filename = "kapital-small.png"
-    s3.Bucket(bucket_name).put_object(Key=remote_filename, Body=image_binary_data)
+    s3.Bucket(bucket_name).put_object(
+        Key=remote_filename,
+        Body=image_binary_data,
+        ContentType="image",
+        ACL="public-read",
+    )
+    url = f"{bucket_name}.s3.amazonaws.com/{remote_filename}"
+    return url
 
 
 def get_image_file_from_bucket(bucket_name, remote_filename):
@@ -54,14 +60,19 @@ def delete_bucket(bucket_name):
 
 def main():
     bucket_name = "vegarsti"
+    delete_bucket(bucket_name)
     # create_bucket(bucket_name)
+    # local_filename = "images/kapital-small.png"
+    # remote_filename = "lol.png"
+    # url = put_image_file_in_bucket(bucket_name, local_filename, remote_filename)
+    # print(url)
 
     # Print name of all buckets
+    """
     s3 = boto3.resource("s3")
     for bucket in s3.buckets.all():
         print(bucket.name)
-
-    # delete_bucket(bucket_name)
+    """
 
 
 if __name__ == "__main__":
