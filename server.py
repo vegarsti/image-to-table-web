@@ -11,7 +11,6 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask_table import Col, Table
 from werkzeug.utils import secure_filename
 
 from api import analyze
@@ -38,6 +37,7 @@ def upload_file():
             flash("No file part")
             return redirect(request.url)
         file = request.files["file"]
+        file_contents = file.read()
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == "":
