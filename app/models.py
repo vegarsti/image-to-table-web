@@ -5,6 +5,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from app import app, db, login
+from aws_helpers import get_url
 
 
 class User(UserMixin, db.Model):
@@ -14,6 +15,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    images = db.relationship("Image", backref="user", lazy="dynamic")
 
     def __repr__(self):
         return "<User {}>".format(self.username)
@@ -53,13 +55,16 @@ def load_user(id):
     return User.query.get(int(id))
 
 
-"""
-class Post(db.Model):
+class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.String(140))
+    uuid = db.Column(
+        db.String(32), default=lambda: uuid.uuid4().hex
+    )  # all uuid hexes are 32 long
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
+    def url(self):
+        return get_url(self.uuid)
+
     def __repr__(self):
-        return "<Post {}>".format(self.body)
-"""
+        return "<Image {}>".format(self.body)
