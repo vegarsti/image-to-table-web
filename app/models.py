@@ -60,6 +60,7 @@ class Image(db.Model):
     uuid = db.Column(db.String(32), nullable=False)  # all uuid hexes are 32 long
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    filename = db.Column(db.String(140), nullable=False)
 
     def url(self):
         return get_url(self.uuid)

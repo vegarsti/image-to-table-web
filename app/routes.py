@@ -34,11 +34,24 @@ def before_request():
         db.session.commit()
 
 
-@app.route("/", methods=["GET"])
-@app.route("/index", methods=["GET"])
+@app.route("/", methods=["GET", "POST"])
+@app.route("/index", methods=["GET", "POST"])
 @login_required
 def index():
-    return render_template("index.html", title="Home")
+    form = PhotoForm()
+    if form.validate_on_submit():
+        f = form.photo.data
+        filename = secure_filename(f.filename)
+        image_contents = f.read()
+        unique_id = uuid.uuid4().hex
+        Thread(target=put_image_in_bucket, args=(unique_id, image_contents)).start()
+        remote_url = get_url(unique_id)
+        image = Image(uuid=unique_id, user=current_user, filename=filename)
+        db.session.add(image)
+        db.session.commit()
+        flash("Your image is uploaded!")
+        return redirect(url_for("index"))
+    return render_template("index.html", form=form, title="Home")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -134,24 +147,3 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
     return render_template("edit_profile.html", title="Edit Profile", form=form)
-
-
-@app.route("/upload", methods=["GET", "POST"])
-def upload():
-    form = PhotoForm()
-    if form.validate_on_submit():
-        f = form.photo.data
-        filename = secure_filename(f.filename)
-        image_contents = f.read()
-        unique_id = uuid.uuid4().hex
-        Thread(target=put_image_in_bucket, args=(unique_id, image_contents)).start()
-        remote_url = get_url(unique_id)
-        image = Image(uuid=unique_id, user=current_user)
-        db.session.add(image)
-        db.session.commit()
-        flash("Your image is uploaded!")
-        return redirect(url_for("index"))
-    else:
-        remote_url = None
-        filename = None
-    return render_template("upload.html", form=form, filename=filename)

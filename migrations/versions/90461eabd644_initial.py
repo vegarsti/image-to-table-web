@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: 9086d1fc6cd1
+Revision ID: 90461eabd644
 Revises: 
-Create Date: 2019-02-22 15:02:36.727003
+Create Date: 2019-02-22 15:37:49.262580
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9086d1fc6cd1'
+revision = '90461eabd644'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,6 +34,7 @@ def upgrade():
     sa.Column('uuid', sa.String(length=32), nullable=False),
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('filename', sa.String(length=140), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
