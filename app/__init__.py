@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
+from flask_images import Images
 from config import Config
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
 
@@ -19,6 +20,7 @@ login.login_view = "login"
 mail = Mail(app)
 bootstrap = Bootstrap(app)
 photos = UploadSet("photos", IMAGES)
+images = Images(app)
 configure_uploads(app, photos)
 patch_request_class(app)  # set maximum file size, default is 16MB
 

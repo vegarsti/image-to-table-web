@@ -1,0 +1,16 @@
+
+    <table class="table table-hover">
+        <tr>
+            <td width="70px" class="col-md-2">
+                <a href="{{ url_for('user', username=image.user.username) }}">
+                    <img src="{{ image.user.avatar(70) }}" />
+                </a>
+            </td>
+            <td class="col-md-2">
+                <img src="{{ image.url() }}" />
+            </td>
+            <td class="col-md-2">
+                Download links
+            </td>
+        </tr>
+    </table>

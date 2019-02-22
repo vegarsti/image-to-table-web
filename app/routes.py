@@ -116,13 +116,8 @@ def reset_password(token):
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get("page", 1, type=int)
-    next_url = None
-    prev_url = None
-    empty_posts = []
-    return render_template(
-        "user.html", user=user, posts=empty_posts, next_url=next_url, prev_url=prev_url
-    )
+    images = Image.query.filter_by(user=user).all()
+    return render_template("user.html", user=user, images=images)
 
 
 @app.route("/edit_profile", methods=["GET", "POST"])
@@ -159,6 +154,4 @@ def upload():
     else:
         remote_url = None
         filename = None
-    return render_template(
-        "upload.html", form=form, file_url=remote_url, filename=filename
-    )
+    return render_template("upload.html", form=form, filename=filename)

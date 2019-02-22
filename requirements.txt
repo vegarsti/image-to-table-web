@@ -20,3 +20,4 @@ flask-mail
 pyjwt
 flask-bootstrap
 flask-uploads
+flask-images
