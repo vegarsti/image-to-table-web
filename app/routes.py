@@ -15,7 +15,7 @@ from app.models import User, Image
 from app.email import send_password_reset_email
 from werkzeug.utils import secure_filename
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
-from aws_helpers import put_image_in_bucket, get_url
+from aws_helpers import put_image_in_bucket, get_url, delete_remote_image
 import uuid
 from threading import Thread
 
@@ -50,7 +50,6 @@ def index():
         db.session.add(image)
         db.session.commit()
         flash("Your image is uploaded!")
-        return redirect(url_for("index"))
     images = Image.query.filter_by(user=current_user).all()
     return render_template("index.html", form=form, title="Home", images=images)
 
@@ -148,3 +147,19 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
     return render_template("edit_profile.html", title="Edit Profile", form=form)
+
+
+@app.route("/delete_image/<unique_id>")
+@login_required
+def delete_image(unique_id):
+    image = (
+        Image.query.filter_by(uuid=unique_id)
+        .filter_by(user=current_user)
+        .first_or_404()
+    )
+    print(image)
+    db.session.delete(image)
+    db.session.commit()
+    flash("Image deleted.")
+    Thread(target=delete_remote_image, args=(unique_id,)).start()
+    return redirect(url_for("index"))

@@ -28,3 +28,11 @@ def get_url(unique_id):
     full_filepath = make_filepath(unique_id)
     url = f"https://{bucket_name}.s3.amazonaws.com/{full_filepath}"
     return url
+
+
+def delete_remote_image(unique_id):
+    bucket_name = "vegarsti"
+    s3 = boto3.resource("s3")
+    full_filepath = make_filepath(unique_id)
+    image = s3.Object(bucket_name, full_filepath)
+    image.delete()
