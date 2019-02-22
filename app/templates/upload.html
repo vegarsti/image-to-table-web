@@ -4,6 +4,12 @@
 {% block app_content %}
     <h1>Hi, {{ current_user.username }}!</h1>
     <div class="row">
+        {% if file_url %}
+        <div class="col-md-8">
+            <h2>Successfully uploaded <a href="{{ file_url }}">{{ filename }}</a>!</h2>
+            <img src="{{ file_url }}" />
+        </div>
+        {% else %}
         <div class="col-md-4">
             <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
@@ -11,10 +17,7 @@
                 <br />
                 {{ form.submit(class_="btn btn-default") }}
             </form>
-            {% if file_url %}
-                <br>
-                <img src="{{ file_url }}">
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 {% endblock %}

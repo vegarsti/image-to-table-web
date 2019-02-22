@@ -15,7 +15,9 @@ from app.models import User
 from app.email import send_password_reset_email
 from werkzeug.utils import secure_filename
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
-from aws_helpers import put_image_in_bucket
+from aws_helpers import put_image_in_bucket, get_url
+import uuid
+from threading import Thread
 
 photos = UploadSet("photos", IMAGES)
 
@@ -146,8 +148,12 @@ def upload():
         f = form.photo.data
         filename = secure_filename(f.filename)
         image_contents = f.read()
-        print(filename)
-        remote_url = put_image_in_bucket(filename, image_contents)
+        unique_id = uuid.uuid4().hex
+        Thread(target=put_image_in_bucket, args=(unique_id, image_contents)).start()
+        remote_url = get_url(unique_id)
     else:
         remote_url = None
-    return render_template("upload.html", form=form, file_url=remote_url)
+        filename = None
+    return render_template(
+        "upload.html", form=form, file_url=remote_url, filename=filename
+    )
