@@ -11,7 +11,7 @@ from app.forms import (
     ResetPasswordForm,
     PhotoForm,
 )
-from app.models import User
+from app.models import User, Image
 from app.email import send_password_reset_email
 from werkzeug.utils import secure_filename
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
@@ -151,6 +151,11 @@ def upload():
         unique_id = uuid.uuid4().hex
         Thread(target=put_image_in_bucket, args=(unique_id, image_contents)).start()
         remote_url = get_url(unique_id)
+        image = Image(uuid=unique_id, user=current_user)
+        db.session.add(image)
+        db.session.commit()
+        flash("Your image is uploaded!")
+        return redirect(url_for("index"))
     else:
         remote_url = None
         filename = None
