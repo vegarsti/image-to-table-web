@@ -25,18 +25,7 @@ def before_request():
 @app.route("/index", methods=["GET"])
 @login_required
 def index():
-    page = request.args.get("page", 1, type=int)
-    next_url = None
-    prev_url = None
-    form = None
-    return render_template(
-        "index.html",
-        title="Home",
-        form=form,
-        posts=[],
-        next_url=next_url,
-        prev_url=prev_url,
-    )
+    return render_template("index.html", title="Home")
 
 
 @app.route("/login", methods=["GET", "POST"])
