@@ -2,9 +2,10 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <h1>Hi, {{ current_user.username }}!</h1>
+    <div class="row"><h1>Hi, {{ current_user.username }}!</h1></div>
     <br />
-    <h1>Upload an image</h1>
+    <div class="row"><h1>Upload an image</h1></div>
+    <br />
     <div class="row">
         <div class="col-md-4">
             <form method="POST" enctype="multipart/form-data">
@@ -14,5 +15,11 @@
                 {{ form.submit(class_="btn btn-default") }}
             </form>
         </div>
+    </div>
+    <br />
+    <div class="row">
+        {% for image in images %}
+            {% include '_image.html' %}
+        {% endfor %}
     </div>
 {% endblock %}

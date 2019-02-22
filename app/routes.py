@@ -51,7 +51,8 @@ def index():
         db.session.commit()
         flash("Your image is uploaded!")
         return redirect(url_for("index"))
-    return render_template("index.html", form=form, title="Home")
+    images = Image.query.filter_by(user=current_user).all()
+    return render_template("index.html", form=form, title="Home", images=images)
 
 
 @app.route("/login", methods=["GET", "POST"])
