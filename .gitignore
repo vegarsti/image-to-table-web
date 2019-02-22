@@ -5,3 +5,4 @@ __pycache__
 uploads/*
 csvs/*
 excel_files/*
+aws_id*
