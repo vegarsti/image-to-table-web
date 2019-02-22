@@ -9,9 +9,14 @@ from app.forms import (
     EditProfileForm,
     ResetPasswordRequestForm,
     ResetPasswordForm,
+    PhotoForm,
 )
 from app.models import User
 from app.email import send_password_reset_email
+from werkzeug.utils import secure_filename
+from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
+
+photos = UploadSet("photos", IMAGES)
 
 
 @app.before_request
@@ -126,3 +131,14 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
     return render_template("edit_profile.html", title="Edit Profile", form=form)
+
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+    form = PhotoForm()
+    if form.validate_on_submit():
+        filename = photos.save(form.photo.data)
+        file_url = photos.url(filename)
+    else:
+        file_url = None
+    return render_template("upload.html", form=form, file_url=file_url)

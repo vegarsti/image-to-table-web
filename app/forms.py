@@ -1,7 +1,9 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from app.models import User
+from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
 
 
 class LoginForm(FlaskForm):
@@ -58,3 +60,16 @@ class EditProfileForm(FlaskForm):
             user = User.query.filter_by(username=self.username.data).first()
             if user is not None:
                 raise ValidationError("Please use a different username.")
+
+
+photos = UploadSet("photos", IMAGES)
+
+
+class PhotoForm(FlaskForm):
+    photo = FileField(
+        validators=[
+            FileAllowed(photos, u"Image only!"),
+            FileRequired(u"File was empty!"),
+        ]
+    )
+    submit = SubmitField(u"Upload")

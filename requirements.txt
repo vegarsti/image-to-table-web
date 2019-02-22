@@ -19,3 +19,4 @@ flask-login
 flask-mail
 pyjwt
 flask-bootstrap
+flask-uploads
