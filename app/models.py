@@ -16,7 +16,6 @@ class User(UserMixin, db.Model):
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     images = db.relationship("Image", backref="user", lazy="dynamic")
-    posts = db.relationship("Post", backref="author", lazy="dynamic")
 
     def __repr__(self):
         return "<User {}>".format(self.username)
@@ -60,7 +59,7 @@ class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(32), nullable=False)  # all uuid hexes are 32 long
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def url(self):
         return get_url(self.uuid)
