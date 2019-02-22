@@ -15,8 +15,14 @@ from app.models import User
 from app.email import send_password_reset_email
 from werkzeug.utils import secure_filename
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
+from aws_helpers import put_image_in_bucket
 
 photos = UploadSet("photos", IMAGES)
+
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg"]
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @app.before_request
@@ -137,8 +143,11 @@ def edit_profile():
 def upload():
     form = PhotoForm()
     if form.validate_on_submit():
-        filename = photos.save(form.photo.data)
-        file_url = photos.url(filename)
+        f = form.photo.data
+        filename = secure_filename(f.filename)
+        image_contents = f.read()
+        print(filename)
+        remote_url = put_image_in_bucket(filename, image_contents)
     else:
-        file_url = None
-    return render_template("upload.html", form=form, file_url=file_url)
+        remote_url = None
+    return render_template("upload.html", form=form, file_url=remote_url)

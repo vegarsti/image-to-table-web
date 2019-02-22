@@ -3,16 +3,13 @@
 
 {% block app_content %}
     <h1>Hi, {{ current_user.username }}!</h1>
-    Do you want to upload a file????
     <div class="row">
         <div class="col-md-4">
             <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
                 {{ form.photo }}
-                {% for error in form.photo.errors %}
-                 <span style="color: red;">{{ error }}</span>
-                {% endfor %}
-                {{ form.submit }}
+                <br />
+                {{ form.submit(class_="btn btn-default") }}
             </form>
             {% if file_url %}
                 <br>

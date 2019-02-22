@@ -3,7 +3,7 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextA
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from flask_wtf.file import FileField, FileRequired, FileAllowed
 from app.models import User
-from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
+from flask_uploads import UploadSet, IMAGES
 
 
 class LoginForm(FlaskForm):
