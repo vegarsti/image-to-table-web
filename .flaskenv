@@ -1,0 +1,2 @@
+FLASK_APP=image2table.py
+FLASK_DEBUG=1

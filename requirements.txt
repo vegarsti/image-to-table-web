@@ -11,3 +11,7 @@ pandas
 openpyxl
 flask
 boto3
+flask-migrate
+flask-sqlalchemy
+flask-wtf
+python-dotenv
