@@ -12,7 +12,25 @@ def create_bucket(bucket_name):
     )
 
 
-def put_image_file_in_bucket(bucket_name, local_filename):
+def put_image_file_in_bucket_with_scrambling(bucket_name, local_filename):
+    s3 = boto3.resource("s3")
+    image_binary_data = open(local_filename, "rb").read()
+    unique_title = uuid.uuid4().hex
+    folder = unique_title[:2]
+    subfolder = unique_title[2:4]
+    full_filepath = f"{folder}/{subfolder}/{unique_title}"
+    s3.Bucket(bucket_name).put_object(
+        Key=full_filepath,
+        Body=image_binary_data,
+        ContentType="image",
+        ACL="public-read",
+    )
+    # bucket could be the hash of the user's email?
+    url = f"{bucket_name}.s3.amazonaws.com/{full_filepath}"
+    return url
+
+
+def put_image_file_in_bucket(bucket_name, local_filename, remote_filename):
     s3 = boto3.resource("s3")
     image_binary_data = open(local_filename, "rb").read()
     unique_title = uuid.uuid4().hex
