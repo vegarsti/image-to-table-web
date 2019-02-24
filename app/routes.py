@@ -18,6 +18,10 @@ from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_cl
 from aws_helpers import put_image_in_bucket, get_url, delete_remote_image
 import uuid
 from threading import Thread
+import pandas as pd
+from api import analyze
+import base64
+import requests
 
 photos = UploadSet("photos", IMAGES)
 
@@ -157,9 +161,63 @@ def delete_image(unique_id):
         .filter_by(user=current_user)
         .first_or_404()
     )
-    print(image)
     db.session.delete(image)
     db.session.commit()
     flash("Image deleted.")
     Thread(target=delete_remote_image, args=(unique_id,)).start()
     return redirect(url_for("index"))
+
+
+@app.route("/extract_from_image/<unique_id>/<number_of_columns>")
+@login_required
+def extract_from_image(unique_id, number_of_columns):
+    try:
+        number_of_columns = int(number_of_columns)
+    except ValueError:
+        flash("Number of columns must be a positive integer.")
+        return redirect(url_for("index"))
+    if number_of_columns < 1:
+        flash("Number of columns must be a positive integer.")
+        return redirect(url_for("index"))
+    image = (
+        Image.query.filter_by(uuid=unique_id)
+        .filter_by(user=current_user)
+        .first_or_404()
+    )
+    image_response = requests.get(image.url())
+    if not image_response.status_code == 200:
+        flash("Something went wrong with getting the image from the internet.")
+        return redirect(url_for("index"))
+    image_content = image_response.content
+    base64_encoded_image = base64.b64encode(image_content)
+    image_json = {"base64_image": base64_encoded_image}
+    cleaned_filename = image.filename
+    df_json = analyze(
+        image_json=image_json,
+        number_of_columns=number_of_columns,
+        show=False,
+        filepath=cleaned_filename,
+    )
+    image.tabular = df_json
+    db.session.add(image)
+    db.session.commit()
+    flash("Table extracted.")
+    return redirect(url_for("index"))
+
+
+@app.route("/view_table/<unique_id>")
+@login_required
+def view_table(unique_id):
+    image = (
+        Image.query.filter_by(uuid=unique_id)
+        .filter_by(user=current_user)
+        .first_or_404()
+    )
+    if not image.tabular:
+        flash("Image doesn't have table data extracted.")
+        return redirect(url_for("index"))
+    df_json = image.tabular
+    df = pd.read_json(df_json, orient="split")
+    df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
+    df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
+    return render_template("table.html", table_html=df.to_html())

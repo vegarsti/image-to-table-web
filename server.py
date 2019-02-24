@@ -37,7 +37,7 @@ def upload_file():
             flash("No file part")
             return redirect(request.url)
         file = request.files["file"]
-        file_contents = file.read()
+        # file_contents = file.read()
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == "":
@@ -52,7 +52,7 @@ def upload_file():
     for filename in os.listdir(path):
         if filename.rsplit(".")[-1] in ALLOWED_EXTENSIONS:
             list_of_files.append(filename)
-    columns = list(range(1, 5))
+    columns = list(range(1, 10))
     any_files = len(list_of_files) > 0
     return render_template(
         "index.html",
@@ -136,14 +136,13 @@ def analyze_file_with_number_of_columns(filename, number_of_columns):
         except FileNotFoundError:
             redirect("/", error="File not found!")
         image_json = {"base64_image": base64_encoded_image}
-        df = analyze(
+        df_json = analyze(
             image_json=image_json,
             number_of_columns=number_of_columns,
             show=False,
             filepath=cleaned_filename,
         )
-        # df_json = ^
-        # df = pd.read_json(df_json)
+        df = pd.read_json(df_json, orient="split")
         analyze_cache[(filename, number_of_columns)] = df
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))

@@ -61,6 +61,8 @@ class Image(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     filename = db.Column(db.String(140), nullable=False)
+    MAX_JSON_CHARACTER_COUNT = 10000
+    tabular = db.Column(db.String(MAX_JSON_CHARACTER_COUNT))
 
     def url(self):
         return get_url(self.uuid)
