@@ -10,13 +10,16 @@
                 <a href="{{ image.url() }}">{{ image.filename }}</a>
             </td>
             <td class="col-md-2">
-                <a href="{{ url_for('delete_image', unique_id=image.uuid) }}">Delete</a>
+                <a href="{{ url_for('delete_image', unique_id=image.uuid) }}">Delete image</a>
             </td>
             <td class="col-md-2">
                 <a href="{{ url_for('extract_from_image', unique_id=image.uuid, number_of_columns=2) }}">Extract table from image</a>
             </td>
             <td class="col-md-2">
                 <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View extracted table</a>
+            </td>
+            <td class="col-md-2">
+                <a href="{{ url_for('delete_table', unique_id=image.uuid) }}">Delete extracted table</a>
             </td>
         </tr>
     </table>

@@ -31,11 +31,13 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+"""
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
+"""
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -168,6 +170,20 @@ def delete_image(unique_id):
     return redirect(url_for("index"))
 
 
+@app.route("/delete_table/<unique_id>")
+@login_required
+def delete_table(unique_id):
+    image = (
+        Image.query.filter_by(uuid=unique_id)
+        .filter_by(user=current_user)
+        .first_or_404()
+    )
+    image.tabular = None
+    db.session.commit()
+    flash("Table deleted.")
+    return redirect(url_for("index"))
+
+
 @app.route("/extract_from_image/<unique_id>/<number_of_columns>")
 @login_required
 def extract_from_image(unique_id, number_of_columns):
@@ -184,9 +200,18 @@ def extract_from_image(unique_id, number_of_columns):
         .filter_by(user=current_user)
         .first_or_404()
     )
+    if image.tabular:
+        flash("Table already extracted!")
+        return redirect(url_for("index"))
+    # Fetch image from AWS S3:
     image_response = requests.get(image.url())
     if not image_response.status_code == 200:
-        flash("Something went wrong with getting the image from the internet.")
+        if image_response.status_code == 403:
+            flash(
+                "Image could not be retrieved, perhaps it had not finished uploading. Please try again."
+            )
+        else:
+            flash("Something went wrong with getting the image from the internet.")
         return redirect(url_for("index"))
     image_content = image_response.content
     base64_encoded_image = base64.b64encode(image_content)
@@ -220,4 +245,9 @@ def view_table(unique_id):
     df = pd.read_json(df_json, orient="split")
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
-    return render_template("table.html", table_html=df.to_html())
+    return render_template(
+        "table.html",
+        table_html=df.to_html(
+            classes="table-bordered table-striped table-hover table-custom"
+        ),
+    )

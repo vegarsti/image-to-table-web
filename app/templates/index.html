@@ -15,9 +15,13 @@
         </div>
     </div>
     <br />
+    {% if images %}
+    <div class="row"><h1>Uploaded images dashboard</h1></div>
+    <br />
     <div class="row">
         {% for image in images %}
             {% include '_image.html' %}
         {% endfor %}
     </div>
+    {% endif %}
 {% endblock %}

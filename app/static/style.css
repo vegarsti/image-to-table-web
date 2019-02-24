@@ -1,3 +1,5 @@
-.dataframe th {
-    padding: 10px;
+.table-custom {
+    td, th {
+        padding: 0;
+    }
 }
