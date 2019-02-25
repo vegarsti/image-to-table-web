@@ -184,14 +184,9 @@ def delete_table(unique_id):
     return redirect(url_for("index"))
 
 
-@app.route("/extract_from_image/<unique_id>/<number_of_columns>")
+@app.route("/extract_from_image/<unique_id>/<int:number_of_columns>")
 @login_required
 def extract_from_image(unique_id, number_of_columns):
-    try:
-        number_of_columns = int(number_of_columns)
-    except ValueError:
-        flash("Number of columns must be a positive integer.")
-        return redirect(url_for("index"))
     if number_of_columns < 1:
         flash("Number of columns must be a positive integer.")
         return redirect(url_for("index"))
