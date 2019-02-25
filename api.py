@@ -106,7 +106,14 @@ def tesseract_specific_code(image_json):
     return json.dumps(data)
 
 
-def analyze(image_json, number_of_columns, show, filepath):
+def analyze(
+    image_json,
+    number_of_columns,
+    show,
+    filepath,
+    write_to_file=False,
+    console_print=False,
+):
     if show:
         base64_encoded_image = image_json.get("base64_image")
         image_string = base64.b64decode(base64_encoded_image)
@@ -115,7 +122,8 @@ def analyze(image_json, number_of_columns, show, filepath):
         cv2.imshow(filepath, image)
         cv2.waitKey(0)
 
-    print(f"Analyzing {filepath}.")
+    if console_print:
+        print(f"Analyzing {filepath}.")
     data = json.loads(tesseract_specific_code(image_json))
     # can add preprocessing steps here!
     height, width, _ = data.pop("shape", None)  # assumes color image
@@ -296,38 +304,34 @@ def analyze(image_json, number_of_columns, show, filepath):
             key=lambda t: t[1],
         )[0]
         alignment_list.append(this_column_orientation)
-    print(alignment_list)
+    # print(alignment_list)
     # print(list(min(distances) for distances in all_distances))
 
-    # Write output
-    print("Printing table.")
-    print()
-    pretty_print_table(rows, alignment_list)
-    print()
+    if console_print:
+        print("Printing table.")
+        print()
+        pretty_print_table(rows, alignment_list)
+        print()
+
+    df = pd.DataFrame(rows, columns=None)
 
     # Write to files
-    parent_directory, _, filename_with_ending = filepath.rpartition("/")
-    filename_without_ending, _, _ = filename_with_ending.rpartition(".")
-    if parent_directory:
-        parent_parent, _, _ = parent_directory.rpartition("/")
-        if parent_parent:
-            prefix = f"{parent_parent}/"
+    if write_to_file:
+        parent_directory, _, filename_with_ending = filepath.rpartition("/")
+        filename_without_ending, _, _ = filename_with_ending.rpartition(".")
+        if parent_directory:
+            parent_parent, _, _ = parent_directory.rpartition("/")
+            if parent_parent:
+                prefix = f"{parent_parent}/"
+            else:
+                prefix = ""
+            csv_path = f"{prefix}csvs/{filename_without_ending}.csv"
+            excel_path = f"{prefix}excel_files/{filename_without_ending}.xlsx"
         else:
-            prefix = ""
-        csv_path = f"{prefix}csvs/{filename_without_ending}.csv"
-        excel_path = f"{prefix}excel_files/{filename_without_ending}.xlsx"
-    else:
-        csv_path = f"{filename_without_ending}.csv"
-        excel_path = f"{filename_without_ending}.xlsx"
-
-    # Write to csv file
-    print(f"Writing csv file {csv_path}.")
-    with open(csv_path, "w+") as csv_file:
-        wr = csv.writer(csv_file, delimiter=",")
-        for row in rows:
-            wr.writerow(row)
-
-    print(f"Writing excel file {excel_path}.")
-    df = pd.read_csv(csv_path, header=None)
-    df.to_excel(excel_path, header=None, index=False)
+            csv_path = f"{filename_without_ending}.csv"
+            excel_path = f"{filename_without_ending}.xlsx"
+        print(f"Writing csv file {csv_path}.")
+        df = pd.to_csv(csv_path, header=None, index=False)
+        print(f"Writing excel file {excel_path}.")
+        df.to_excel(excel_path, header=None, index=False)
     return df.to_json(orient="split")

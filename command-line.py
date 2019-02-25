@@ -38,4 +38,6 @@ analyze(
     number_of_columns=args.columns,
     show=args.show,
     filepath=args.filepath,
+    write_to_file=True,
+    console_print=True,
 )
