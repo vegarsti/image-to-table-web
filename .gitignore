@@ -8,3 +8,4 @@ excel_files/*
 aws_id*
 *.xlsx
 *.csv
+.idea
