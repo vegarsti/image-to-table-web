@@ -22,3 +22,4 @@ flask-bootstrap
 flask-uploads
 flask-images
 requests
+XlsxWriter
