@@ -2,4 +2,26 @@
 
 {% block app_content %}
     {{ table_html | safe }}
+    <table>
+        <tr>
+            <td>
+                <br />
+            </td>
+        </tr>
+        <tr>
+            <td class="col-md-2">
+                <a href="{{ image.excel_url() }}">Download as Excel file</a>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <br />
+            </td>
+        </tr>
+        <tr>
+            <td class="col-md-2">
+                <a href="{{ url_for('delete_table', unique_id=image.uuid) }}">Delete extracted table</a>
+            </td>
+        </tr>
+    </table>
 {% endblock %}

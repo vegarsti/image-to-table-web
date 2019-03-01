@@ -1,4 +1,3 @@
-from datetime import datetime
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.urls import url_parse
@@ -14,14 +13,19 @@ from app.forms import (
 from app.models import User, Image
 from app.email import send_password_reset_email
 from werkzeug.utils import secure_filename
-from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
-from aws_helpers import put_image_in_bucket, get_url, delete_remote_image
+from flask_uploads import UploadSet, IMAGES
+from aws_helpers import (
+    put_image_in_bucket,
+    delete_remote_image,
+    put_excel_file_in_bucket,
+)
 import uuid
 from threading import Thread
 import pandas as pd
 from api import analyze
 import base64
 import requests
+import io
 
 photos = UploadSet("photos", IMAGES)
 
@@ -29,15 +33,6 @@ photos = UploadSet("photos", IMAGES)
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg"]
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-"""
-@app.before_request
-def before_request():
-    if current_user.is_authenticated:
-        current_user.last_seen = datetime.utcnow()
-        db.session.commit()
-"""
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -50,8 +45,10 @@ def index():
         filename = secure_filename(f.filename)
         image_contents = f.read()
         unique_id = uuid.uuid4().hex
-        Thread(target=put_image_in_bucket, args=(unique_id, image_contents)).start()
-        remote_url = get_url(unique_id)
+        file_ending = filename.rsplit(".")[-1]
+        Thread(
+            target=put_image_in_bucket, args=(unique_id, image_contents, file_ending)
+        ).start()
         image = Image(uuid=unique_id, user=current_user, filename=filename)
         db.session.add(image)
         db.session.commit()
@@ -199,7 +196,7 @@ def extract_from_image(unique_id, number_of_columns):
         flash("Table already extracted!")
         return redirect(url_for("index"))
     # Fetch image from AWS S3:
-    image_response = requests.get(image.url())
+    image_response = requests.get(image.image_url())
     if not image_response.status_code == 200:
         if image_response.status_code == 403:
             flash(
@@ -218,6 +215,15 @@ def extract_from_image(unique_id, number_of_columns):
         show=False,
         filepath=cleaned_filename,
     )
+    df = pd.read_json(df_json, orient="split")
+    df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
+    df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
+    output = io.BytesIO()
+    writer = pd.ExcelWriter(output, engine="xlsxwriter")
+    df.to_excel(writer)
+    writer.save()
+    excel_binary_data = output.getvalue()
+    Thread(target=put_excel_file_in_bucket, args=(unique_id, excel_binary_data)).start()
     image.tabular = df_json
     db.session.add(image)
     db.session.commit()
@@ -245,4 +251,5 @@ def view_table(unique_id):
         table_html=df.to_html(
             classes="table-bordered table-striped table-hover table-custom"
         ),
+        image=image,
     )

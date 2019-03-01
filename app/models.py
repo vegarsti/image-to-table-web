@@ -64,8 +64,13 @@ class Image(db.Model):
     MAX_JSON_CHARACTER_COUNT = 10000
     tabular = db.Column(db.String(MAX_JSON_CHARACTER_COUNT))
 
-    def url(self):
-        return get_url(self.uuid)
+    def image_url(self):
+        file_ending = self.filename.rsplit(".")[-1]
+        return get_url(self.uuid) + "." + file_ending
+
+    def excel_url(self):
+        file_ending = "xlsx"
+        return get_url(self.uuid) + "." + file_ending
 
     def __repr__(self):
         return "<Image {}>".format(self.uuid)
