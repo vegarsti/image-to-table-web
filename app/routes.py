@@ -253,3 +253,14 @@ def view_table(unique_id):
         ),
         image=image,
     )
+
+
+@app.route("/image/<unique_id>")
+@login_required
+def image(unique_id):
+    image = (
+        Image.query.filter_by(uuid=unique_id)
+        .filter_by(user=current_user)
+        .first_or_404()
+    )
+    return render_template("image.html", image=image)
