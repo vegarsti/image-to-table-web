@@ -1,12 +1,9 @@
-import argparse
 import base64
-import csv
 import itertools
 import json
 import statistics
 import sys
-import time
-from collections import Counter, namedtuple
+from collections import namedtuple
 
 import cv2
 import numpy as np
@@ -70,7 +67,6 @@ def join_formatted_lines(lines):
 
 
 def pretty_print_table(table, alignment_list):
-    number_of_columns = len(table[0])
     alignment_operators = {"left": "<", "right": ">"}
     alignment_options = [alignment_operators[alignment] for alignment in alignment_list]
     justified_table = align_table(table, alignment_options)
@@ -106,6 +102,45 @@ def tesseract_specific_code(image_json):
     return json.dumps(data)
 
 
+def find_index_of_n_largest(items, n):
+    # assume items is sorted list with positive numbers of diffs
+    indexes = []
+    copied_items = [i for i in items]
+    while len(indexes) < n - 1:
+        max_index = copied_items.index(max(copied_items))
+        indexes.append(max_index)
+        copied_items = [i for i in copied_items]
+        copied_items[max_index] = 0
+    return sorted([i + 1 for i in indexes])
+
+
+def get_boxes_at_level(boxes, level):
+    # return bounding boxes, sorted by pixel value of top of bounding box
+    return sorted([box for box in boxes if box.level == level], key=lambda box: box.top)
+
+
+def boxes_equal(b1, b2):
+    equal_size = b1.size == b2.size
+    equal_top = b1.top == b2.top
+    return equal_size and equal_top
+
+
+def is_box_inside_other_box(box1, box2):
+    if boxes_equal(box1, box2):
+        return False
+    size = box1.size < box2.size
+    left = box1.left >= box2.left
+    right = box1.right <= box2.right
+    top = box1.top >= box2.top
+    bottom = box1.bottom <= box2.bottom
+    return size and left and right and top and bottom
+
+
+def partition(items, predicate=bool):
+    a, b = itertools.tee((predicate(item), item) for item in items)
+    return ((item for pred, item in a if not pred), (item for pred, item in b if pred))
+
+
 def analyze(
     image_json,
     number_of_columns,
@@ -125,102 +160,23 @@ def analyze(
     if console_print:
         print(f"Analyzing {filepath}.")
     data = json.loads(tesseract_specific_code(image_json))
-    # can add preprocessing steps here!
     height, width, _ = data.pop("shape", None)  # assumes color image
-    picture_size = height * width
 
-    fields_string = "level left top width height conf text"
-    fields = fields_string.split()
-
-    for field, values in data.items():
-        N = len(values)
-
-    boxes = [{} for i in range(N)]
-    for field, values in data.items():
-        if field in fields:
-            for i, value in enumerate(values):
-                boxes[i][field] = value
-
-    for box in boxes:
-        box["right"] = box["left"] + box["width"]
-        box["bottom"] = box["top"] + box["height"]
-        box["size"] = box["width"] * box["height"]
-
-    example_box = boxes[0]
-    Box = namedtuple("Box", sorted(example_box))
-    boxes = [Box(**box) for box in boxes]
-    levels_counter = Counter(box.level for box in boxes)
+    boxes = create_box_objects_from_tesseract_bounding_boxes(data)
 
     LINE_LEVEL = 4
     WORD_LEVEL = 5
 
-    number_of_lines = levels_counter[LINE_LEVEL]
-
-    def find_index_of_n_largest(items, n):
-        # assume items is sorted list with positive numbers of diffs
-        indexes = []
-        copied_items = [i for i in items]
-        while len(indexes) < n - 1:
-            max_index = copied_items.index(max(copied_items))
-            indexes.append(max_index)
-            copied_items = [i for i in copied_items]
-            copied_items[max_index] = 0
-        return sorted([i + 1 for i in indexes])
-
-    def get_boxes_at_level(boxes, level):
-        # return bounding boxes, sorted by pixel value of top of bounding box
-        return sorted(
-            [box for box in boxes if box.level == level], key=lambda box: box.top
-        )
-
     boxes_bounding_lines = get_boxes_at_level(boxes, LINE_LEVEL)
     boxes_bounding_words = get_boxes_at_level(boxes, WORD_LEVEL)
-
-    def boxes_equal(b1, b2):
-        equal_size = b1.size == b2.size
-        equal_top = b1.top == b2.top
-        return equal_size and equal_top
-
-    def is_box_inside_other_box(box1, box2):
-        if boxes_equal(box1, box2):
-            return False
-        size = box1.size < box2.size
-        left = box1.left >= box2.left
-        right = box1.right <= box2.right
-        top = box1.top >= box2.top
-        bottom = box1.bottom <= box2.bottom
-        return size and left and right and top and bottom
-
-    def partition(items, predicate=bool):
-        a, b = itertools.tee((predicate(item), item) for item in items)
-        return (
-            (item for pred, item in a if not pred),
-            (item for pred, item in b if pred),
-        )
 
     all_divisions = []
     line_dicts = []
     for i, line_box in enumerate(boxes_bounding_lines):
-        # find those boxes which are inside this line
-        line_dict = {}
-        line_dict["bounding_box"] = line_box
-        word_boxes = [
-            box
-            for box in boxes_bounding_words
-            if is_box_inside_other_box(box, line_box)
-        ]
-        line_dict["word_boxes"] = sorted(word_boxes, key=lambda word_box: word_box.left)
-        line_dict["words"] = [word_box.text for word_box in line_dict["word_boxes"]]
-
-        # Find horizontal pixel difference between words
-        diffs = [
-            line_dict["word_boxes"][i].left - line_dict["word_boxes"][i - 1].right
-            for i in range(1, len(line_dict["word_boxes"]))
-        ]
-
+        line_dict = find_boxes_inside_line(boxes_bounding_words, line_box)
+        diffs = find_horizontal_distances_between_bounding_boxes(line_dict)
         if number_of_columns > 1:
             indexes = find_index_of_n_largest(diffs, number_of_columns)
-            group_words = []
             divisions = [
                 (
                     line_dict["word_boxes"][index].left,
@@ -233,19 +189,7 @@ def analyze(
         line_dicts.append(line_dict)
 
     if number_of_columns > 1:
-        all_midpoints = []
-        for divisions in all_divisions:
-            midpoints = []
-            for left, right in divisions:
-                # midpoints.append(right + (left - right) / 2)
-                midpoints.append(right)
-            all_midpoints.append(midpoints)
-
-        transposed_midpoints = list(zip(*all_midpoints))
-
-        dividing_points = []
-        for column_midpoints in transposed_midpoints:
-            dividing_points.append(int(max(column_midpoints)))
+        dividing_points = find_all_dividing_points(all_divisions)
 
     rows_strings = []
     rows = []
@@ -274,7 +218,6 @@ def analyze(
                 distances = (distance_to_left, distance_to_right)
                 all_distances[i].append(distances)
                 text = " ".join(p.text for p in boxes_to_left)
-                # text = text.replace(",", ".")  # ugly hack!
                 cells.append(text)
                 boxes_to_left = boxes_to_right
                 left_point = right_point
@@ -292,6 +235,76 @@ def analyze(
             rows_strings.append(cell)
         sanitized_cells = sanitize(cells)
         rows.append(sanitized_cells)
+    alignment_list = find_column_alignments(all_distances)
+
+    if console_print:
+        print("Printing table.")
+        print()
+        pretty_print_table(rows, alignment_list)
+        print()
+
+    df = pd.DataFrame(rows, columns=None)
+
+    # Write to files
+    if write_to_file:
+        write_to_files(df, filepath)
+    return df.to_json(orient="split")
+
+
+def create_box_objects_from_tesseract_bounding_boxes(data):
+    fields_string = "level left top width height conf text"
+    fields = fields_string.split()
+    for field, values in data.items():
+        N = len(values)
+    boxes = [{} for _ in range(N)]
+    for field, values in data.items():
+        if field in fields:
+            for i, value in enumerate(values):
+                boxes[i][field] = value
+    for box in boxes:
+        box["right"] = box["left"] + box["width"]
+        box["bottom"] = box["top"] + box["height"]
+        box["size"] = box["width"] * box["height"]
+    example_box = boxes[0]
+    Box = namedtuple("Box", sorted(example_box))
+    boxes = [Box(**box) for box in boxes]
+    return boxes
+
+
+def find_boxes_inside_line(boxes_bounding_words, line_box):
+    line_dict = {}
+    line_dict["bounding_box"] = line_box
+    word_boxes = [
+        box for box in boxes_bounding_words if is_box_inside_other_box(box, line_box)
+    ]
+    line_dict["word_boxes"] = sorted(word_boxes, key=lambda word_box: word_box.left)
+    line_dict["words"] = [word_box.text for word_box in line_dict["word_boxes"]]
+    return line_dict
+
+
+def find_horizontal_distances_between_bounding_boxes(line_dict):
+    diffs = [
+        line_dict["word_boxes"][i].left - line_dict["word_boxes"][i - 1].right
+        for i in range(1, len(line_dict["word_boxes"]))
+    ]
+    return diffs
+
+
+def find_all_dividing_points(all_divisions):
+    all_midpoints = []
+    for divisions in all_divisions:
+        midpoints = []
+        for left, right in divisions:
+            midpoints.append(right)
+        all_midpoints.append(midpoints)
+    transposed_midpoints = list(zip(*all_midpoints))
+    dividing_points = []
+    for column_midpoints in transposed_midpoints:
+        dividing_points.append(int(max(column_midpoints)))
+    return dividing_points
+
+
+def find_column_alignments(all_distances):
     alignment_list = []
     for i, column_distances in enumerate(all_distances):
         left, right = [
@@ -304,34 +317,24 @@ def analyze(
             key=lambda t: t[1],
         )[0]
         alignment_list.append(this_column_orientation)
-    # print(alignment_list)
-    # print(list(min(distances) for distances in all_distances))
+    return alignment_list
 
-    if console_print:
-        print("Printing table.")
-        print()
-        pretty_print_table(rows, alignment_list)
-        print()
 
-    df = pd.DataFrame(rows, columns=None)
-
-    # Write to files
-    if write_to_file:
-        parent_directory, _, filename_with_ending = filepath.rpartition("/")
-        filename_without_ending, _, _ = filename_with_ending.rpartition(".")
-        if parent_directory:
-            parent_parent, _, _ = parent_directory.rpartition("/")
-            if parent_parent:
-                prefix = f"{parent_parent}/"
-            else:
-                prefix = ""
-            csv_path = f"{prefix}csvs/{filename_without_ending}.csv"
-            excel_path = f"{prefix}excel_files/{filename_without_ending}.xlsx"
+def write_to_files(df, filepath):
+    parent_directory, _, filename_with_ending = filepath.rpartition("/")
+    filename_without_ending, _, _ = filename_with_ending.rpartition(".")
+    if parent_directory:
+        parent_parent, _, _ = parent_directory.rpartition("/")
+        if parent_parent:
+            prefix = f"{parent_parent}/"
         else:
-            csv_path = f"{filename_without_ending}.csv"
-            excel_path = f"{filename_without_ending}.xlsx"
-        print(f"Writing csv file {csv_path}.")
-        df = pd.to_csv(csv_path, header=None, index=False)
-        print(f"Writing excel file {excel_path}.")
-        df.to_excel(excel_path, header=None, index=False)
-    return df.to_json(orient="split")
+            prefix = ""
+        csv_path = f"{prefix}csvs/{filename_without_ending}.csv"
+        excel_path = f"{prefix}excel_files/{filename_without_ending}.xlsx"
+    else:
+        csv_path = f"{filename_without_ending}.csv"
+        excel_path = f"{filename_without_ending}.xlsx"
+    print(f"Writing csv file {csv_path}.")
+    df.to_csv(csv_path, header=None, index=False)
+    print(f"Writing excel file {excel_path}.")
+    df.to_excel(excel_path, header=None, index=False)
