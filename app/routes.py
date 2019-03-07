@@ -7,6 +7,7 @@ from app.forms import (
     RegistrationForm,
     EditProfileForm,
     ResetPasswordRequestForm,
+    ChangePasswordForm,
     ResetPasswordForm,
     PhotoForm,
     ColumnForm,
@@ -153,9 +154,21 @@ def reset_password(token):
     return render_template("reset_password.html", form=form)
 
 
+@app.route("/change_password/", methods=["GET", "POST"])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        current_user.set_password(form.new_password.data)
+        db.session.commit()
+        flash("Your password has been changed.")
+        return redirect(url_for("login"))
+    return render_template("change_password.html", form=form)
+
+
 @app.route("/user/<username>")
 @login_required
-def user(username):
+def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     images = Image.query.filter_by(user=user).all()
     return render_template("user.html", user=user, images=images)
@@ -259,7 +272,6 @@ def extract_from_image(unique_id, number_of_columns):
     image.tabular = df_json
     db.session.add(image)
     db.session.commit()
-    flash("Table extracted.")
     return redirect(url_for("view_table", unique_id=unique_id))
 
 

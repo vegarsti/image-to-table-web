@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <h1>{{ image.filename }}</h1>
+    <div class="row"><h1>{{ image.filename }}</h1></div>
     <table>
         <tr>
             <td>
@@ -10,7 +10,12 @@
         </tr>
         <tr>
             <td class="col-md-2">
-                <a href="{{ image.excel_url() }}">Download as Excel file</a>
+                <a href="{{ url_for('image', unique_id=image.uuid) }}">Back to view image</a>
+            </td>
+        </tr>
+        <tr>
+            <td class="col-md-2">
+                <a href="{{ image.excel_url() }}">Download table as Excel file</a>
             </td>
         </tr>
         <tr>
@@ -21,11 +26,6 @@
     </table>
     {% include '_table.html' %}
     <table>
-        <tr>
-            <td>
-                <br />
-            </td>
-        </tr>
         <tr>
             <td class="col-md-2">
                 <a href="{{ url_for('delete_table', unique_id=image.uuid) }}">Delete table</a>
