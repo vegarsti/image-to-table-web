@@ -1,5 +1,12 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms import (
+    StringField,
+    PasswordField,
+    BooleanField,
+    SubmitField,
+    TextAreaField,
+    IntegerField,
+)
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from flask_wtf.file import FileField, FileRequired, FileAllowed
 from app.models import User
@@ -73,3 +80,14 @@ class PhotoForm(FlaskForm):
         ]
     )
     submit = SubmitField(u"Upload")
+
+
+class ColumnForm(FlaskForm):
+    columns = IntegerField(
+        label="How many columns are there in the table?", validators=[DataRequired()]
+    )
+    submit = SubmitField("Extract table from image")
+
+    def validate_columns(self, columns):
+        if columns.data < 1:
+            raise ValidationError("The number of columns is a positive integer.")

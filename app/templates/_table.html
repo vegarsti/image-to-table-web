@@ -1,0 +1,11 @@
+<table class="table table-striped table-bordered">
+    {% for row in rows %}
+        <tr>
+            {% for item in row %}
+                <td class="col-md-2">
+                    {{ item }}
+                </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+</table>

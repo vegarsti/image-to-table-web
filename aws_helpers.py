@@ -1,4 +1,5 @@
 import boto3
+from aws_id import AWS_SERVER_PUBLIC_KEY, AWS_SERVER_SECRET_KEY
 
 
 def get_bucket_name():
@@ -8,7 +9,7 @@ def get_bucket_name():
 def put_image_in_bucket(unique_id, image_binary_data, file_ending, filename):
     full_filepath = make_filepath(unique_id, filename) + "." + file_ending
     bucket_name = get_bucket_name()
-    s3 = boto3.resource("s3")
+    s3 = gets3()
     s3.Bucket(bucket_name).put_object(
         Key=full_filepath,
         Body=image_binary_data,
@@ -20,7 +21,7 @@ def put_image_in_bucket(unique_id, image_binary_data, file_ending, filename):
 def put_excel_file_in_bucket(unique_id, excel_binary_data, filename):
     full_filepath = make_filepath(unique_id, filename) + ".xlsx"
     bucket_name = get_bucket_name()
-    s3 = boto3.resource("s3")
+    s3 = gets3()
     s3.Bucket(bucket_name).put_object(
         Key=full_filepath,
         Body=excel_binary_data,
@@ -31,13 +32,6 @@ def put_excel_file_in_bucket(unique_id, excel_binary_data, filename):
 
 def make_filepath(unique_id, filename):
     full_filepath = f"{unique_id}/{filename}"
-    return full_filepath
-
-
-def make_file_directory(unique_id):
-    folder = unique_id[:2]
-    subfolder = unique_id[2:4]
-    full_filepath = f"{folder}/{subfolder}/{unique_id}"
     return full_filepath
 
 
@@ -65,15 +59,30 @@ def get_csv_url(unique_id, filename):
 
 def delete_all_files_for_image(unique_id):
     bucket_name = get_bucket_name()
-    s3 = boto3.resource("s3")
-    directory_path = make_file_directory(unique_id)
-    directory = s3.Object(bucket_name, directory_path)
-    directory.delete()
+    s3 = gets3()
+    objects_to_delete = s3.meta.client.list_objects(
+        Bucket=bucket_name, Prefix=unique_id
+    )
+    delete_keys = {"Objects": []}
+    delete_keys["Objects"] = [
+        {"Key": k}
+        for k in [obj["Key"] for obj in objects_to_delete.get("Contents", [])]
+    ]
+    s3.meta.client.delete_objects(Bucket=bucket_name, Delete=delete_keys)
+
+
+def gets3():
+    session = boto3.Session(
+        aws_access_key_id=AWS_SERVER_PUBLIC_KEY,
+        aws_secret_access_key=AWS_SERVER_SECRET_KEY,
+    )
+    s3 = session.resource("s3")
+    return s3
 
 
 def delete_remote_excel(unique_id, filename):
     bucket_name = get_bucket_name()
-    s3 = boto3.resource("s3")
+    s3 = gets3()
     filename_without_ending = filename.rsplit(".")[0]
     print(filename_without_ending)
     excel_path = make_filepath(unique_id, filename_without_ending) + ".xlsx"

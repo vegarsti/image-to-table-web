@@ -9,6 +9,7 @@ from app.forms import (
     ResetPasswordRequestForm,
     ResetPasswordForm,
     PhotoForm,
+    ColumnForm,
 )
 from app.models import User, Image
 from app.email import send_password_reset_email
@@ -57,15 +58,14 @@ def index():
         ).start()
         thumbnail_image_contents = thumbnail(image_contents, N=200)
         thumbnail_filename = f"{filename}_thumbnail"
-        put_image_in_bucket(unique_id, image_contents, file_ending, filename)
         put_image_in_bucket(
             unique_id, thumbnail_image_contents, file_ending, thumbnail_filename
         )
-        """
         Thread(
             target=put_image_in_bucket,
             args=(unique_id, image_contents, file_ending, filename),
         ).start()
+        """
         Thread(
             target=put_image_in_bucket,
             args=(unique_id, thumbnail_image_contents, file_ending, thumbnail_filename),
@@ -275,16 +275,11 @@ def view_table(unique_id):
     df = pd.read_json(df_json, orient="split")
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
-    return render_template(
-        "table.html",
-        table_html=df.to_html(
-            classes="table-bordered table-striped table-hover table-custom"
-        ),
-        image=image,
-    )
+    rows = df.values.tolist()
+    return render_template("table.html", image=image, rows=rows)
 
 
-@app.route("/image/<unique_id>")
+@app.route("/image/<unique_id>", methods=["GET", "POST"])
 @login_required
 def image(unique_id):
     image = (
@@ -292,5 +287,19 @@ def image(unique_id):
         .filter_by(user=current_user)
         .first_or_404()
     )
-    columns = list(range(2, 5))
-    return render_template("image.html", image=image, columns=columns)
+    form = ColumnForm()
+    if form.validate_on_submit():
+        number_of_columns = form.columns.data
+        return extract_from_image(unique_id, number_of_columns)
+    return render_template("image.html", image=image, form=form)
+
+
+@app.route("/delete_all_images/")
+@login_required
+def delete_all_images():
+    images = list(reversed(Image.query.filter_by(user=current_user).all()))
+    for image in images:
+        Thread(target=delete_all_files_for_image, args=(image.uuid,)).start()
+        db.session.delete(image)
+        db.session.commit()
+    return redirect(url_for("index"))
