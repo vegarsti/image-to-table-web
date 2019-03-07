@@ -1,29 +1,17 @@
 <table class="table table-hover">
     <tr>
-        <td width="70px" class="col-md-2">
-            <a href="{{ url_for('user', username=image.user.username) }}">
-                <img src="{{ image.user.avatar(70) }}" />
+        <td width="200px" class="col-md-2 thumb">
+            <a href="{{ url_for('image', unique_id=image.uuid) }}">
+                <img style="width: 200px; border: 1px solid black" src="{{ image.thumbnail_url() }}" />
             </a>
         </td>
         <td class="col-md-2">
-            <a href="{{ image.image_url() }}">{{ image.filename }}</a>
-        </td>
-        <td class="col-md-2">
-            <a href="{{ url_for('delete_image', unique_id=image.uuid) }}">Delete image</a>
-        </td>
-        <td class="col-md-2">
-            <a href="{{ url_for('extract_from_image', unique_id=image.uuid, number_of_columns=2) }}">Extract table from image</a>
+            <b>{{ image.filename }}</b>
         </td>
         {% if image.tabular %}
-        <td class="col-md-2">
-            <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View extracted table</a>
-        </td>
-        <td class="col-md-2">
-            <a href="{{ image.excel_url() }}">Download as Excel file</a>
-        </td>
-        <td class="col-md-2">
-            <a href="{{ url_for('delete_table', unique_id=image.uuid) }}">Delete extracted table</a>
-        </td>
+            <td class="col-md-2">
+                <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View extracted table</a>
+            </td>
         {% endif %}
     </tr>
 </table>

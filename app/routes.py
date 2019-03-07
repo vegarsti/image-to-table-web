@@ -16,8 +16,9 @@ from werkzeug.utils import secure_filename
 from flask_uploads import UploadSet, IMAGES
 from aws_helpers import (
     put_image_in_bucket,
-    delete_remote_image,
+    delete_all_files_for_image,
     put_excel_file_in_bucket,
+    delete_remote_excel,
 )
 import uuid
 from threading import Thread
@@ -26,6 +27,8 @@ from api import analyze
 import base64
 import requests
 import io
+from image_crop import thumbnail
+
 
 photos = UploadSet("photos", IMAGES)
 
@@ -42,18 +45,37 @@ def index():
     form = PhotoForm()
     if form.validate_on_submit():
         f = form.photo.data
-        filename = secure_filename(f.filename)
+        full_filename = secure_filename(f.filename)
         image_contents = f.read()
+        print(type(image_contents))
         unique_id = uuid.uuid4().hex
-        file_ending = filename.rsplit(".")[-1]
+        file_ending = full_filename.rsplit(".")[-1]
+        filename = full_filename.rsplit(".")[0].rsplit("/")[-1]
         Thread(
-            target=put_image_in_bucket, args=(unique_id, image_contents, file_ending)
+            target=put_image_in_bucket,
+            args=(unique_id, image_contents, file_ending, filename),
         ).start()
-        image = Image(uuid=unique_id, user=current_user, filename=filename)
+        thumbnail_image_contents = thumbnail(image_contents, N=200)
+        thumbnail_filename = f"{filename}_thumbnail"
+        put_image_in_bucket(unique_id, image_contents, file_ending, filename)
+        put_image_in_bucket(
+            unique_id, thumbnail_image_contents, file_ending, thumbnail_filename
+        )
+        """
+        Thread(
+            target=put_image_in_bucket,
+            args=(unique_id, image_contents, file_ending, filename),
+        ).start()
+        Thread(
+            target=put_image_in_bucket,
+            args=(unique_id, thumbnail_image_contents, file_ending, thumbnail_filename),
+        ).start()
+        """
+        image = Image(uuid=unique_id, user=current_user, filename=full_filename)
         db.session.add(image)
         db.session.commit()
         flash("Your image is uploaded!")
-    images = Image.query.filter_by(user=current_user).all()
+    images = list(reversed(Image.query.filter_by(user=current_user).all()))
     return render_template("index.html", form=form, title="Home", images=images)
 
 
@@ -163,7 +185,8 @@ def delete_image(unique_id):
     db.session.delete(image)
     db.session.commit()
     flash("Image deleted.")
-    Thread(target=delete_remote_image, args=(unique_id,)).start()
+    filename = image.filename
+    Thread(target=delete_all_files_for_image, args=(unique_id, filename)).start()
     return redirect(url_for("index"))
 
 
@@ -176,6 +199,9 @@ def delete_table(unique_id):
         .first_or_404()
     )
     image.tabular = None
+    filename = image.filename
+    # Thread(target=delete_remote_excel, args=(unique_id, filename)).start()
+    delete_remote_excel(unique_id, filename)
     db.session.commit()
     flash("Table deleted.")
     return redirect(url_for("index"))
@@ -223,12 +249,15 @@ def extract_from_image(unique_id, number_of_columns):
     df.to_excel(writer)
     writer.save()
     excel_binary_data = output.getvalue()
-    Thread(target=put_excel_file_in_bucket, args=(unique_id, excel_binary_data)).start()
+    filename = image.filename.rsplit(".")[0]
+    Thread(
+        target=put_excel_file_in_bucket, args=(unique_id, excel_binary_data, filename)
+    ).start()
     image.tabular = df_json
     db.session.add(image)
     db.session.commit()
     flash("Table extracted.")
-    return redirect(url_for("index"))
+    return redirect(url_for("view_table", unique_id=unique_id))
 
 
 @app.route("/view_table/<unique_id>")
@@ -263,4 +292,5 @@ def image(unique_id):
         .filter_by(user=current_user)
         .first_or_404()
     )
-    return render_template("image.html", image=image)
+    columns = list(range(2, 5))
+    return render_template("image.html", image=image, columns=columns)

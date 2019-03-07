@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    {{ table_html | safe }}
+    <h1>{{ image.filename }}</h1>
     <table>
         <tr>
             <td>
@@ -18,9 +18,27 @@
                 <br />
             </td>
         </tr>
+    </table>
+    {{ table_html | safe }}
+    <table>
+        <tr>
+            <td>
+                <br />
+            </td>
+        </tr>
         <tr>
             <td class="col-md-2">
-                <a href="{{ url_for('delete_table', unique_id=image.uuid) }}">Delete extracted table</a>
+                <a href="{{ url_for('delete_table', unique_id=image.uuid) }}">Delete table</a>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <br />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <br />
             </td>
         </tr>
     </table>

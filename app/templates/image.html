@@ -2,27 +2,36 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
+    <h1>{{ image.filename }}</h1>
     <div class="row">
         <table class="table table-hover">
+            {% if image.tabular %}
+                <tr>
+                    <td class="col-md-2">
+                        <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View as table</a>
+                    </td>
+                </tr>
+            {% else %}
+                {% for column in columns %}
+                    <tr>
+                        <td class="col-md-2">
+                            <a href="{{ url_for('extract_from_image', unique_id=image.uuid, number_of_columns=column) }}">Extract table of {{column}} columns from image!</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
             <tr>
                 <td width="300px" class="col-md-2">
-                    <a href="{{ url_for('user', username=image.user.username) }}">
-                        <img src="{{ image.user.avatar(300) }}" />
+                    <a href="{{ image.image_url() }}">
+                        <img src="{{ image.image_url() }}" style="border: 1px solid black;" />
                     </a>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-2">
-                    <a href="{{ image.image_url() }}">{{ image.filename }}</a>
+                    <a href="{{ url_for('delete_image', unique_id=image.uuid) }}">Delete</a>
                 </td>
             </tr>
-            {% if image.tabular %}
-                <tr>
-                    <td class="col-md-2">
-                        <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View extracted table</a>
-                    </td>
-                </tr>
-            {% endif %}
         </table>
     </div>
 {% endblock %}
