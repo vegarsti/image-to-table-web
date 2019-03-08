@@ -1,8 +1,14 @@
 {% extends 'bootstrap/base.html' %}
-<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
 {% block title %}
     {% if title %}{{ title }} - Image2Table{% else %}Welcome to Image2Table{% endif %}
+{% endblock %}
+
+{% block head %}
+{{super()}}
+    {% block favicon %}
+        <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    {% endblock %}
 {% endblock %}
 
 {% block navbar %}
@@ -20,7 +26,7 @@
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
-                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                    <li><a href="{{ url_for('login') }}">Log in</a></li>
                     {% else %}
                     <li><a href="{{ url_for('user_profile', username=current_user.username) }}">Settings</a></li>
                     <li><a href="{{ url_for('logout') }}">Log out</a></li>

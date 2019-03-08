@@ -221,7 +221,7 @@ def delete_table(unique_id):
     delete_remote_excel(unique_id, filename)
     db.session.commit()
     flash("Table deleted.")
-    return redirect(url_for("index"))
+    return redirect(url_for("image", unique_id=unique_id))
 
 
 @app.route("/extract_from_image/<unique_id>/<int:number_of_columns>")
