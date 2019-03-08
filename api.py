@@ -164,6 +164,8 @@ def analyze(
 
     boxes = create_box_objects_from_tesseract_bounding_boxes(data)
 
+    should_sanitize = True
+
     LINE_LEVEL = 4
     WORD_LEVEL = 5
 
@@ -190,14 +192,12 @@ def analyze(
 
     if number_of_columns > 1:
         dividing_points = find_all_dividing_points(all_divisions)
-
     rows_strings = []
     rows = []
     sorted_line_dicts = sorted(line_dicts, key=lambda l: l["bounding_box"].top)
     all_distances = []
     for i in range(number_of_columns):
         all_distances.append([])
-    right_points = dividing_points
     for j, line_dict in enumerate(sorted_line_dicts):
         boxes_to_left = line_dict["word_boxes"]
         cells = []
@@ -233,9 +233,15 @@ def analyze(
             cell = " ".join(p.text for p in boxes_to_left)
             cells = [cell]
             rows_strings.append(cell)
-        sanitized_cells = sanitize(cells)
+        if should_sanitize:
+            sanitized_cells = sanitize(cells)
+        else:
+            sanitized_cells = cells
         rows.append(sanitized_cells)
-    alignment_list = find_column_alignments(all_distances)
+    if number_of_columns > 1:
+        alignment_list = find_column_alignments(all_distances)
+    elif number_of_columns == 1:
+        alignment_list = ["left"]
 
     if console_print:
         print("Printing table.")
