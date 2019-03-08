@@ -30,6 +30,18 @@ def put_excel_file_in_bucket(unique_id, excel_binary_data, filename):
     )
 
 
+def put_csv_file_in_bucket(unique_id, csv_binary_data, filename):
+    full_filepath = make_filepath(unique_id, filename) + ".csv"
+    bucket_name = get_bucket_name()
+    s3 = gets3()
+    s3.Bucket(bucket_name).put_object(
+        Key=full_filepath,
+        Body=csv_binary_data,
+        ContentType="text/csv",
+        ACL="public-read",
+    )
+
+
 def make_filepath(unique_id, filename):
     full_filepath = f"{unique_id}/{filename}"
     return full_filepath

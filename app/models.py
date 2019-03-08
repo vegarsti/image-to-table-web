@@ -73,6 +73,11 @@ class Image(db.Model):
         file_ending = "xlsx"
         return get_url(self.uuid, filename) + "." + file_ending
 
+    def csv_url(self):
+        filename, _ = self.filename.rsplit(".")
+        file_ending = "csv"
+        return get_url(self.uuid, filename) + "." + file_ending
+
     def thumbnail_url(self):
         filename, file_ending = self.filename.rsplit(".")
         return get_url(self.uuid, filename) + "_thumbnail" + "." + file_ending

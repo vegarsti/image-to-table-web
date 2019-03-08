@@ -21,6 +21,7 @@ from aws_helpers import (
     delete_all_files_for_image,
     put_excel_file_in_bucket,
     delete_remote_excel,
+    put_csv_file_in_bucket,
 )
 import uuid
 from threading import Thread
@@ -260,14 +261,21 @@ def extract_from_image(unique_id, number_of_columns):
     df = pd.read_json(df_json, orient="split")
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
-    output = io.BytesIO()
-    writer = pd.ExcelWriter(output, engine="xlsxwriter")
-    df.to_excel(writer)
-    writer.save()
-    excel_binary_data = output.getvalue()
+    with io.BytesIO() as output:
+        writer = pd.ExcelWriter(output, engine="xlsxwriter")
+        df.to_excel(writer, header=None, index=None)
+        writer.save()
+        excel_binary_data = output.getvalue()
     filename = image.filename.rsplit(".")[0]
     Thread(
         target=put_excel_file_in_bucket, args=(unique_id, excel_binary_data, filename)
+    ).start()
+    with io.StringIO() as output:
+        df.to_csv(output, header=None, index=None)
+        contents = output.getvalue()
+        csv_binary_data = str.encode(contents)
+    Thread(
+        target=put_csv_file_in_bucket, args=(unique_id, csv_binary_data, filename)
     ).start()
     image.tabular = df_json
     db.session.add(image)
