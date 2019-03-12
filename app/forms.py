@@ -6,6 +6,7 @@ from wtforms import (
     SubmitField,
     TextAreaField,
     IntegerField,
+    SelectField,
 )
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from flask_wtf.file import FileField, FileRequired, FileAllowed
@@ -98,6 +99,11 @@ class ColumnForm(FlaskForm):
     columns = IntegerField(
         label="How many columns are there in the table?", validators=[DataRequired()]
     )
+    language = SelectField(
+        "In which language is the text in the table?",
+        choices=[("Norwegian", "Norwegian"), ("English", "English")],
+        default="English",
+    )
     submit = SubmitField("Extract table from image")
 
     def validate_columns(self, columns):
@@ -108,6 +114,11 @@ class ColumnForm(FlaskForm):
 class ColumnAgainForm(FlaskForm):
     columns = IntegerField(
         label="Try again with a new number of columns?", validators=[DataRequired()]
+    )
+    language = SelectField(
+        "In which language is the text in the table?",
+        choices=[("Norwegian", "Norwegian"), ("English", "English")],
+        default="English",
     )
     submit = SubmitField("Extract table from image")
 

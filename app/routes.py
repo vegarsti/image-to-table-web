@@ -76,7 +76,7 @@ def index():
         image = Image(uuid=unique_id, user=current_user, filename=full_filename)
         db.session.add(image)
         db.session.commit()
-        flash("Your image is uploaded!")
+        flash("Your image was uploaded!")
     images = list(reversed(Image.query.filter_by(user=current_user).all()))
     return render_template("index.html", form=form, title="Home", images=images)
 
@@ -226,7 +226,7 @@ def delete_table(unique_id):
 
 @app.route("/extract_from_image/<unique_id>/<int:number_of_columns>")
 @login_required
-def extract_from_image(unique_id, number_of_columns):
+def extract_from_image(unique_id, number_of_columns, language):
     if number_of_columns < 1:
         flash("Number of columns must be a positive integer.")
         return redirect(url_for("index"))
@@ -247,7 +247,7 @@ def extract_from_image(unique_id, number_of_columns):
         return redirect(url_for("index"))
     image_content = image_response.content
     base64_encoded_image = base64.b64encode(image_content)
-    image_json = {"base64_image": base64_encoded_image}
+    image_json = {"base64_image": base64_encoded_image, "language": language}
     cleaned_filename = image.filename
     df_json = analyze(
         image_json=image_json,
@@ -312,10 +312,12 @@ def image(unique_id):
     form_again = ColumnAgainForm()
     if form.validate_on_submit():
         number_of_columns = form.columns.data
-        return extract_from_image(unique_id, number_of_columns)
+        language = form.language.data
+        return extract_from_image(unique_id, number_of_columns, language=language)
     if form_again.validate_on_submit():
-        number_of_columns = form.columns.data
-        return extract_from_image(unique_id, number_of_columns)
+        number_of_columns = form_again.columns.data
+        language = form_again.language.data
+        return extract_from_image(unique_id, number_of_columns, anguage=language)
     if image.tabular:
         df_json = image.tabular
         df = pd.read_json(df_json, orient="split")

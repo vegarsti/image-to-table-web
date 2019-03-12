@@ -3,7 +3,7 @@ import itertools
 import json
 import statistics
 import sys
-from collections import namedtuple
+from collections import namedtuple, Counter
 
 import cv2
 import numpy as np
@@ -91,13 +91,19 @@ def image_to_base64_json(filepath):
 
 def tesseract_specific_code(image_json):
     base64_encoded_image = image_json.get("base64_image")
+    language = image_json.get("language")
     image_string = base64.b64decode(base64_encoded_image)
     image_as_byte_array = np.fromstring(image_string, np.uint8)
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
-    tesseract_config = "--psm 6 -l nor"  # assume a single uniform block of text
+    language_map = {"Norwegian": "nor", "English": "eng"}
+    language_config = language_map[language]
+    tesseract_config = (
+        f"--psm 6 -l {language_config}"
+    )  # assume a single uniform block of text
     data = pytesseract.image_to_data(
         image, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
+    print(pytesseract.image_to_string(image, config=tesseract_config))
     data["shape"] = image.shape
     return json.dumps(data)
 
@@ -127,9 +133,7 @@ def boxes_equal(b1, b2):
 
 
 def is_box_inside_other_box(box1, box2):
-    if boxes_equal(box1, box2):
-        return False
-    size = box1.size < box2.size
+    size = box1.size <= box2.size
     left = box1.left >= box2.left
     right = box1.right <= box2.right
     top = box1.top >= box2.top
@@ -167,6 +171,8 @@ def analyze(
 
     should_sanitize = True
 
+    levels = Counter(box.level for box in boxes)
+    print(levels)
     LINE_LEVEL = 4
     WORD_LEVEL = 5
 
@@ -175,6 +181,7 @@ def analyze(
     boxes_bounding_lines = get_boxes_at_level(boxes, LINE_LEVEL)
     boxes_bounding_words = get_boxes_at_level(boxes, WORD_LEVEL)
     print(boxes_bounding_words)
+    print(boxes_bounding_lines)
 
     all_divisions = []
     line_dicts = []
@@ -237,6 +244,7 @@ def analyze(
             comma_separated_row = ",".join(cells)
             rows_strings.append(comma_separated_row)
         else:  # 1 column
+            print(boxes_to_left)
             cell = " ".join(p.text for p in boxes_to_left)
             cells = [cell]
             rows_strings.append(cell)
