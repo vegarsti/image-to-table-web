@@ -23,7 +23,7 @@ def sanitize(items):
     full_dictionary = {**replacement_dictionary, **remove_dictionary}
     new_items = []
     for cell in items:
-        if is_numerical(cell):
+        if len(cell) > 0 and is_numerical(cell):
             new_items.append(make_cell_numerical(cell, full_dictionary))
         else:
             new_items.append(cell)
