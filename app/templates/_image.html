@@ -1,17 +1,21 @@
-<table class="table table-hover">
+<table class="table-hover col-sm-6">
     <tr>
-        <td width="200px" class="col-md-2 thumb">
+        <td width="200px" class="col-sm-3 col-md-3">
+            <b>{{ image.filename }}</b><br /><br />
             <a href="{{ url_for('image', unique_id=image.uuid) }}">
                 <img style="width: 200px; border: 1px solid black" src="{{ image.thumbnail_url() }}" />
             </a>
         </td>
-        <td class="col-md-2">
-            <b>{{ image.filename }}</b>
+        <td class="col-sm-3 col-md-3">
+            
         </td>
-        {% if image.tabular %}
-            <td class="col-md-2">
+        <td class="col-sm-3 col-md-3">
+            <a href="{{ url_for('image', unique_id=image.uuid) }}">View image</a>
+        </td>
+        <td class="col-sm-3 col-md-3">
+            {% if image.tabular %}
                 <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View as table</a>
-            </td>
-        {% endif %}
+            {% endif %}
+        </td>
     </tr>
 </table>

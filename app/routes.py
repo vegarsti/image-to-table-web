@@ -11,6 +11,7 @@ from app.forms import (
     ResetPasswordForm,
     PhotoForm,
     ColumnForm,
+    ColumnAgainForm,
 )
 from app.models import User, Image
 from app.email import send_password_reset_email
@@ -22,6 +23,7 @@ from aws_helpers import (
     put_excel_file_in_bucket,
     delete_remote_excel,
     put_csv_file_in_bucket,
+    filename_helper,
 )
 import uuid
 from threading import Thread
@@ -50,10 +52,8 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        print(type(image_contents))
         unique_id = uuid.uuid4().hex
-        file_ending = full_filename.rsplit(".")[-1]
-        filename = full_filename.rsplit(".")[0].rsplit("/")[-1]
+        filename, file_ending = filename_helper(full_filename)
         Thread(
             target=put_image_in_bucket,
             args=(unique_id, image_contents, file_ending, filename),
@@ -235,9 +235,6 @@ def extract_from_image(unique_id, number_of_columns):
         .filter_by(user=current_user)
         .first_or_404()
     )
-    if image.tabular:
-        flash("Table already extracted!")
-        return redirect(url_for("index"))
     # Fetch image from AWS S3:
     image_response = requests.get(image.image_url())
     if not image_response.status_code == 200:
@@ -280,7 +277,8 @@ def extract_from_image(unique_id, number_of_columns):
     image.tabular = df_json
     db.session.add(image)
     db.session.commit()
-    return redirect(url_for("view_table", unique_id=unique_id))
+    flash("Table extracted!")
+    return redirect(url_for("image", unique_id=unique_id))
 
 
 @app.route("/view_table/<unique_id>")
@@ -311,10 +309,24 @@ def image(unique_id):
         .first_or_404()
     )
     form = ColumnForm()
+    form_again = ColumnAgainForm()
     if form.validate_on_submit():
         number_of_columns = form.columns.data
         return extract_from_image(unique_id, number_of_columns)
-    return render_template("image.html", image=image, form=form)
+    if form_again.validate_on_submit():
+        number_of_columns = form.columns.data
+        return extract_from_image(unique_id, number_of_columns)
+    if image.tabular:
+        df_json = image.tabular
+        df = pd.read_json(df_json, orient="split")
+        df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
+        df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
+        rows = df.values.tolist()
+    else:
+        rows = None
+    return render_template(
+        "image.html", image=image, form=form, rows=rows, form_again=form_again
+    )
 
 
 @app.route("/delete_all_images/")

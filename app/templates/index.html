@@ -2,7 +2,7 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <div class="row"><h1>Upload an image</h1></div>
+    <div class="container"><div class="row"><h1>Upload an image</h1></div></div>
     <br />
     <div class="row">
         <div class="col-md-4">
@@ -16,12 +16,13 @@
     </div>
     <br />
     {% if images %}
-    <div class="row"><h1>Uploaded images</h1></div>
-    <br />
-    <div class="row">
+    <div class="container">
+        <div class="row"><h1>Uploaded images (click on an image to extract the table)</h1></div>
+        <div class="row">
         {% for image in images %}
-            {% include '_image.html' %}
+            {% include '_image2.html' %}
         {% endfor %}
+        </div>
     </div>
     {% endif %}
 {% endblock %}
