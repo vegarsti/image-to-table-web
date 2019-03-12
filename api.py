@@ -106,6 +106,7 @@ def find_index_of_n_largest(items, n):
     # assume items is sorted list with positive numbers of diffs
     indexes = []
     copied_items = [i for i in items]
+    print(copied_items)
     while len(indexes) < n - 1:
         max_index = copied_items.index(max(copied_items))
         indexes.append(max_index)
@@ -169,8 +170,11 @@ def analyze(
     LINE_LEVEL = 4
     WORD_LEVEL = 5
 
+    ## SHOULD FIX SOMETHING HERE
+
     boxes_bounding_lines = get_boxes_at_level(boxes, LINE_LEVEL)
     boxes_bounding_words = get_boxes_at_level(boxes, WORD_LEVEL)
+    print(boxes_bounding_words)
 
     all_divisions = []
     line_dicts = []
@@ -192,12 +196,15 @@ def analyze(
 
     if number_of_columns > 1:
         dividing_points = find_all_dividing_points(all_divisions)
+    else:
+        dividing_points = []
     rows_strings = []
     rows = []
     sorted_line_dicts = sorted(line_dicts, key=lambda l: l["bounding_box"].top)
     all_distances = []
     for i in range(number_of_columns):
         all_distances.append([])
+    right_points = dividing_points
     for j, line_dict in enumerate(sorted_line_dicts):
         boxes_to_left = line_dict["word_boxes"]
         cells = []
