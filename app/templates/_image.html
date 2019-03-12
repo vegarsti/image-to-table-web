@@ -1,21 +1,17 @@
-<table class="table-hover col-sm-6">
-    <tr>
-        <td width="200px" class="col-sm-3 col-md-3">
-            <b>{{ image.filename }}</b><br /><br />
+<div class="col-xs-12 col-sm-6 col-md-4" style="padding: 10px;">
+    <div class="col-xs-12 col-sm-6 col-md-12">
+        <div class="row" style="height: 60px;">
+            <h3>
+                {% if image.tabular %}
+                    <a href="{{ image.excel_url() }}" title="Download Excel file"><i class="fas fa-file-excel"></i></a>
+                    <a href="{{ image.csv_url() }}" title="Download CSV file"><i class="fas fa-file-csv"></i></a>
+                {% endif %}
+            </h3>
+        </div>
+        <div class="row" style="width: 350px;">
             <a href="{{ url_for('image', unique_id=image.uuid) }}">
-                <img style="width: 200px; border: 1px solid black" src="{{ image.thumbnail_url() }}" />
+                <img style="border: 1px solid black; width: 100%;" src="{{ image.thumbnail_url() }}" />
             </a>
-        </td>
-        <td class="col-sm-3 col-md-3">
-            
-        </td>
-        <td class="col-sm-3 col-md-3">
-            <a href="{{ url_for('image', unique_id=image.uuid) }}">View image</a>
-        </td>
-        <td class="col-sm-3 col-md-3">
-            {% if image.tabular %}
-                <a href="{{ url_for('view_table', unique_id=image.uuid) }}">View as table</a>
-            {% endif %}
-        </td>
-    </tr>
-</table>
+        </div>
+    </div>
+</div>

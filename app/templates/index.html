@@ -17,12 +17,11 @@
     <br />
     {% if images %}
     <div class="container">
-        <div class="row"><h1>Uploaded images (click on an image to extract the table)</h1></div>
-        <div class="row">
+        <div class="row"><h1>Click on an image</h1></div>
         {% for image in images %}
-            {% include '_image2.html' %}
+            {% include '_image.html' %}
         {% endfor %}
-        </div>
+        
     </div>
     {% endif %}
 {% endblock %}
