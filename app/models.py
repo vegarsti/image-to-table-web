@@ -5,7 +5,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from app import app, db, login
-from aws_helpers import get_url
+from aws_helpers import get_url, filename_helper
 
 
 class User(UserMixin, db.Model):
@@ -65,21 +65,21 @@ class Image(db.Model):
     tabular = db.Column(db.String(MAX_JSON_CHARACTER_COUNT))
 
     def image_url(self):
-        filename, file_ending = self.filename.rsplit(".")
+        filename, file_ending = filename_helper(self.filename)
         return get_url(self.uuid, filename) + "." + file_ending
 
     def excel_url(self):
-        filename, _ = self.filename.rsplit(".")
+        filename, _ = filename_helper(self.filename)
         file_ending = "xlsx"
         return get_url(self.uuid, filename) + "." + file_ending
 
     def csv_url(self):
-        filename, _ = self.filename.rsplit(".")
+        filename, _ = filename_helper(self.filename)
         file_ending = "csv"
         return get_url(self.uuid, filename) + "." + file_ending
 
     def thumbnail_url(self):
-        filename, file_ending = self.filename.rsplit(".")
+        filename, file_ending = filename_helper(self.filename)
         return get_url(self.uuid, filename) + "_thumbnail" + "." + file_ending
 
     def __repr__(self):

@@ -2,6 +2,13 @@ import boto3
 from aws_id import AWS_SERVER_PUBLIC_KEY, AWS_SERVER_SECRET_KEY
 
 
+def filename_helper(filename):
+    splitted = filename.rsplit(".")
+    file_ending = splitted[-1]
+    filename = ".".join(splitted[:-1])
+    return filename, file_ending
+
+
 def get_bucket_name():
     return "vegarsti"
 
@@ -95,9 +102,7 @@ def gets3():
 def delete_remote_excel(unique_id, filename):
     bucket_name = get_bucket_name()
     s3 = gets3()
-    filename_without_ending = filename.rsplit(".")[0]
-    print(filename_without_ending)
+    filename_without_ending, _ = filename_helper(filename)
     excel_path = make_filepath(unique_id, filename_without_ending) + ".xlsx"
-    print(excel_path)
     excel_file = s3.Object(bucket_name, excel_path)
     excel_file.delete()
