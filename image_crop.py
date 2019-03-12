@@ -17,7 +17,7 @@ def square_image_no_fill(image):
     return image
 
 
-def thumbnail(image_data, N=200):
+def thumbnail(image_data, N=800):
     image = Image.open(io.BytesIO(image_data))
     squared_image = square_image_no_fill(image)
     size = N, N
