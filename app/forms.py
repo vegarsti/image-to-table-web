@@ -103,3 +103,14 @@ class ColumnForm(FlaskForm):
     def validate_columns(self, columns):
         if columns.data < 1:
             raise ValidationError("The number of columns is a positive integer.")
+
+
+class ColumnAgainForm(FlaskForm):
+    columns = IntegerField(
+        label="Try again with a new number of columns?", validators=[DataRequired()]
+    )
+    submit = SubmitField("Extract table from image")
+
+    def validate_columns(self, columns):
+        if columns.data < 1:
+            raise ValidationError("The number of columns is a positive integer.")
