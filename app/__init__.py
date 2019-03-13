@@ -35,6 +35,7 @@ def favicon():
 
 
 if not app.debug:
+    app_name = app.config["APPNAME"]
     if app.config["MAIL_SERVER"]:
         auth = None
         if app.config["MAIL_USERNAME"] or app.config["MAIL_PASSWORD"]:
@@ -46,7 +47,7 @@ if not app.debug:
             mailhost=(app.config["MAIL_SERVER"], app.config["MAIL_PORT"]),
             fromaddr="no-reply@" + app.config["MAIL_SERVER"],
             toaddrs=app.config["ADMINS"],
-            subject="Microblog Failure",
+            subject=f"{app_name} Failure",
             credentials=auth,
             secure=secure,
         )
@@ -56,7 +57,7 @@ if not app.debug:
     if not os.path.exists("logs"):
         os.mkdir("logs")
     file_handler = RotatingFileHandler(
-        "logs/microblog.log", maxBytes=10240, backupCount=10
+        "logs/image-to-table.log", maxBytes=10240, backupCount=10
     )
     file_handler.setFormatter(
         logging.Formatter(
@@ -67,6 +68,6 @@ if not app.debug:
     app.logger.addHandler(file_handler)
 
     app.logger.setLevel(logging.INFO)
-    app.logger.info("Microblog startup")
+    app.logger.info(f"{app_name} startup")
 
 from app import routes, models, errors
