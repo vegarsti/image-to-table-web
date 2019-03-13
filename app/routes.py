@@ -132,7 +132,7 @@ def reset_password_request():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             send_password_reset_email(user)
-        flash("Check your email for the instructions to reset your password")
+        flash("Check your email for the instructions on how to reset your password.")
         return redirect(url_for("login"))
     return render_template(
         "reset_password_request.html", title="Reset Password", form=form
@@ -152,43 +152,8 @@ def reset_password(token):
         db.session.commit()
         flash("Your password has been reset.")
         return redirect(url_for("login"))
+    print(app.config["APPNAME"])
     return render_template("reset_password.html", form=form)
-
-
-@app.route("/change_password/", methods=["GET", "POST"])
-@login_required
-def change_password():
-    form = ChangePasswordForm()
-    if form.validate_on_submit():
-        current_user.set_password(form.new_password.data)
-        db.session.commit()
-        flash("Your password has been changed.")
-        return redirect(url_for("login"))
-    return render_template("change_password.html", form=form)
-
-
-@app.route("/user/<username>")
-@login_required
-def user_profile(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    images = Image.query.filter_by(user=user).all()
-    return render_template("user.html", user=user, images=images)
-
-
-@app.route("/edit_profile", methods=["GET", "POST"])
-@login_required
-def edit_profile():
-    form = EditProfileForm(current_user.username)
-    if form.validate_on_submit():
-        current_user.username = form.username.data
-        current_user.about_me = form.about_me.data
-        db.session.commit()
-        flash("Your changes have been saved.")
-        return redirect(url_for("edit_profile"))
-    elif request.method == "GET":
-        form.username.data = current_user.username
-        form.about_me.data = current_user.about_me
-    return render_template("edit_profile.html", title="Edit Profile", form=form)
 
 
 @app.route("/delete_image/<unique_id>")
@@ -281,25 +246,6 @@ def extract_from_image(unique_id, number_of_columns, language):
     return redirect(url_for("image", unique_id=unique_id))
 
 
-@app.route("/view_table/<unique_id>")
-@login_required
-def view_table(unique_id):
-    image = (
-        Image.query.filter_by(uuid=unique_id)
-        .filter_by(user=current_user)
-        .first_or_404()
-    )
-    if not image.tabular:
-        flash("Image doesn't have table data extracted.")
-        return redirect(url_for("index"))
-    df_json = image.tabular
-    df = pd.read_json(df_json, orient="split")
-    df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
-    df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
-    rows = df.values.tolist()
-    return render_template("table.html", image=image, rows=rows)
-
-
 @app.route("/image/<unique_id>", methods=["GET", "POST"])
 @login_required
 def image(unique_id):
@@ -339,4 +285,6 @@ def delete_all_images():
         Thread(target=delete_all_files_for_image, args=(image.uuid,)).start()
         db.session.delete(image)
         db.session.commit()
+    if len(images) > 0:
+        flash("All images were deleted.")
     return redirect(url_for("index"))

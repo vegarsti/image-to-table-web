@@ -2,7 +2,7 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <div class="container"><div class="row"><h1>Upload an image</h1></div></div>
+    <div class="container"><div class="row"><h1>Click on an image</h1></div></div>
     <br />
     <div class="row">
         <div class="col-md-4">
@@ -12,6 +12,11 @@
                 <br />
                 {{ form.submit(class_="btn btn-default") }}
             </form>
+        </div>
+        <div class="col-md-4">
+        </div>
+        <div class="col-md-4">
+            <p><a href="{{ url_for('delete_all_images') }}">Delete all images</a></p>
         </div>
     </div>
     <br />
