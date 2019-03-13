@@ -43,6 +43,33 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def upload_image(image_contents, full_filename):
+    unique_id = uuid.uuid4().hex
+    filename, file_ending = filename_helper(full_filename)
+    Thread(
+        target=put_image_in_bucket,
+        args=(unique_id, image_contents, file_ending, filename),
+    ).start()
+    thumbnail_image_contents = thumbnail(image_contents, N=200)
+    thumbnail_filename = f"{filename}_thumbnail"
+    put_image_in_bucket(
+        unique_id, thumbnail_image_contents, file_ending, thumbnail_filename
+    )
+    Thread(
+        target=put_image_in_bucket,
+        args=(unique_id, image_contents, file_ending, filename),
+    ).start()
+    """
+    Thread(
+        target=put_image_in_bucket,
+        args=(unique_id, thumbnail_image_contents, file_ending, thumbnail_filename),
+    ).start()
+    """
+    image = Image(uuid=unique_id, user=current_user, filename=full_filename)
+    db.session.add(image)
+    db.session.commit()
+
+
 @app.route("/", methods=["GET", "POST"])
 @app.route("/index", methods=["GET", "POST"])
 @login_required
@@ -52,30 +79,7 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        unique_id = uuid.uuid4().hex
-        filename, file_ending = filename_helper(full_filename)
-        Thread(
-            target=put_image_in_bucket,
-            args=(unique_id, image_contents, file_ending, filename),
-        ).start()
-        thumbnail_image_contents = thumbnail(image_contents, N=200)
-        thumbnail_filename = f"{filename}_thumbnail"
-        put_image_in_bucket(
-            unique_id, thumbnail_image_contents, file_ending, thumbnail_filename
-        )
-        Thread(
-            target=put_image_in_bucket,
-            args=(unique_id, image_contents, file_ending, filename),
-        ).start()
-        """
-        Thread(
-            target=put_image_in_bucket,
-            args=(unique_id, thumbnail_image_contents, file_ending, thumbnail_filename),
-        ).start()
-        """
-        image = Image(uuid=unique_id, user=current_user, filename=full_filename)
-        db.session.add(image)
-        db.session.commit()
+        upload_image(image_contents, full_filename)
         flash("Your image was uploaded!")
     images = list(reversed(Image.query.filter_by(user=current_user).all()))
     return render_template("index.html", form=form, title="Home", images=images)
@@ -287,4 +291,19 @@ def delete_all_images():
         db.session.commit()
     if len(images) > 0:
         flash("All images were deleted.")
+    return redirect(url_for("index"))
+
+
+@app.route("/add_example_image/")
+@login_required
+def add_example_image():
+    example_image_url = "http://vegardstikbakke.com/assets/img/example.png"
+    example_filename = "example.png"
+    image_response = requests.get(example_image_url)
+    if not image_response.status_code == 200:
+        flash("The example image could not be retrieved.")
+        return redirect(url_for("index"))
+    image_contents = image_response.content
+    upload_image(image_contents, example_filename)
+    flash("Example image was added.")
     return redirect(url_for("index"))
