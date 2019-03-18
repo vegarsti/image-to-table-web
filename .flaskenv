@@ -1,2 +1,2 @@
 FLASK_APP=server_entrypoint.py
-FLASK_DEBUG=1
+FLASK_ENV=development # remove to enable production
