@@ -21,7 +21,11 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <div class="col-md-12"><a class="navbar-brand" href="{{ url_for('index') }}">Image-to-Table</a></div>
+                <div class="col-md-12">
+                    <a class="navbar-brand" href="{{ url_for('index') }}">Image-to-Table (home)</a>
+                    &nbsp;&nbsp;
+                    <span class="navbar-brand" style="color: black;">Extract a table from an image</span>
+                </div>
             </div>
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right">
@@ -41,7 +45,11 @@
         {% with messages = get_flashed_messages() %}
         {% if messages %}
             {% for message in messages %}
-            <div class="alert alert-info" role="alert">{{ message }}</div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-info" role="alert">{{ message }}</div>
+                </div>
+            </div>
             {% endfor %}
         {% endif %}
         {% endwith %}

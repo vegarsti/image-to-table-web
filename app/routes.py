@@ -59,12 +59,6 @@ def upload_image(image_contents, full_filename):
         target=put_image_in_bucket,
         args=(unique_id, image_contents, file_ending, filename),
     ).start()
-    """
-    Thread(
-        target=put_image_in_bucket,
-        args=(unique_id, thumbnail_image_contents, file_ending, thumbnail_filename),
-    ).start()
-    """
     image = Image(uuid=unique_id, user=current_user, filename=full_filename)
     db.session.add(image)
     db.session.commit()
