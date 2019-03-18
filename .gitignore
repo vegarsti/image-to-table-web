@@ -8,7 +8,8 @@ uploads/*
 .idea
 logs
 .env
-app.db
 csvs
 excel_files
 uploads
+app.db
+migrations
