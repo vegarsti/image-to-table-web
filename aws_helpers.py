@@ -1,5 +1,10 @@
 import boto3
-from aws_id import AWS_SERVER_PUBLIC_KEY, AWS_SERVER_SECRET_KEY
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+AWS_SERVER_PUBLIC_KEY = os.getenv("AWS_SERVER_PUBLIC_KEY")
+AWS_SERVER_SECRET_KEY = os.getenv("AWS_SERVER_SECRET_KEY")
 
 
 def filename_helper(filename):

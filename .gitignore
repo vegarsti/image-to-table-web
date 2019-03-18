@@ -10,3 +10,4 @@ aws_id*
 *.csv
 .idea
 logs
+.env

@@ -1,7 +1,2 @@
 FLASK_APP=image2table.py
 FLASK_DEBUG=1
-MAIL_SERVER=smtp.googlemail.com
-MAIL_PORT=587
-MAIL_USE_TLS=1
-MAIL_USERNAME=image2table
-MAIL_PASSWORD=vgs??1234
