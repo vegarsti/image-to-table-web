@@ -1,2 +1,2 @@
-FLASK_APP=image2table.py
+FLASK_APP=server_entrypoint.py
 FLASK_DEBUG=1
