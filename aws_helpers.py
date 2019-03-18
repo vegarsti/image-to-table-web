@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 AWS_SERVER_PUBLIC_KEY = os.getenv("AWS_SERVER_PUBLIC_KEY")
 AWS_SERVER_SECRET_KEY = os.getenv("AWS_SERVER_SECRET_KEY")
+AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 
 
 def filename_helper(filename):
@@ -15,7 +16,7 @@ def filename_helper(filename):
 
 
 def get_bucket_name():
-    return "vegarsti"
+    return AWS_BUCKET_NAME
 
 
 def put_image_in_bucket(unique_id, image_binary_data, file_ending, filename):

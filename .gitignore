@@ -11,3 +11,4 @@ aws_id*
 .idea
 logs
 .env
+app.db
