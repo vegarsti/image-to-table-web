@@ -1,1 +1,3 @@
-Install `tesseract`. On macOS, that's `brew install tesseract --with-all-languages`.
+
+1. Install all dependencies by `pip install -r requirements.txt`.
+2. Set environment variables in `.env`.
