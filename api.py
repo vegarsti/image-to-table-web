@@ -13,70 +13,6 @@ import pytesseract
 from sanitize import sanitize
 
 
-def column_widths(table):
-    """Get the maximum size for each column in table"""
-    return [max(map(len, col)) for col in zip(*table)]
-
-
-def copy_nested_list(l):
-    """Return a copy of list l to one level of nesting"""
-    return [list(i) for i in l]
-
-
-def align_table(table, align):
-    """Return table justified according to align"""
-    widths = column_widths(table)
-    new_table = copy_nested_list(table)
-    for row in new_table:
-        for cell_num, cell in enumerate(row):
-            row[cell_num] = "{:{align}{width}}".format(
-                cell, align=align[cell_num], width=widths[cell_num]
-            )
-    return new_table
-
-
-def add_padding(table, padding):
-    """Return a version of table which is padded according to inputted padding"""
-    new_table = copy_nested_list(table)
-    for i, row in enumerate(new_table):
-        padding_string = " " * padding
-        for j, cell in enumerate(row):
-            left = padding_string
-            right = padding_string
-            if j == 0:
-                left = ""
-            elif j == len(row) - 1:
-                right = ""
-            new_table[i][j] = left + new_table[i][j] + right
-    return new_table
-
-
-def join_columns_with_divider(table, decorator):
-    """Join each line in table with the decorator string between each cell"""
-    return [decorator.join(row) for row in table]
-
-
-def right_strip_lines(lines):
-    """Remove trailing spaces on each line"""
-    return [line.rstrip() for line in lines]
-
-
-def join_formatted_lines(lines):
-    """Return the finished output"""
-    return "\n".join(lines)
-
-
-def pretty_print_table(table, alignment_list):
-    alignment_operators = {"left": "<", "right": ">"}
-    alignment_options = [alignment_operators[alignment] for alignment in alignment_list]
-    justified_table = align_table(table, alignment_options)
-    padded_table = add_padding(justified_table, padding=1)
-    lines = join_columns_with_divider(padded_table, decorator=" ")
-    lines = right_strip_lines(lines)
-    finished_output = join_formatted_lines(lines)
-    print(finished_output)
-
-
 def image_to_base64_json(filepath):
     try:
         with open(filepath, "rb") as file_descriptor:
@@ -103,7 +39,6 @@ def tesseract_specific_code(image_json):
     data = pytesseract.image_to_data(
         image, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
-    print(pytesseract.image_to_string(image, config=tesseract_config))
     data["shape"] = image.shape
     return json.dumps(data)
 
@@ -112,7 +47,6 @@ def find_index_of_n_largest(items, n):
     # assume items is sorted list with positive numbers of diffs
     indexes = []
     copied_items = [i for i in items]
-    print(copied_items)
     while len(indexes) < n - 1:
         max_index = copied_items.index(max(copied_items))
         indexes.append(max_index)
@@ -146,24 +80,7 @@ def partition(items, predicate=bool):
     return ((item for pred, item in a if not pred), (item for pred, item in b if pred))
 
 
-def analyze(
-    image_json,
-    number_of_columns,
-    show,
-    filepath,
-    write_to_file=False,
-    console_print=False,
-):
-    if show:
-        base64_encoded_image = image_json.get("base64_image")
-        image_string = base64.b64decode(base64_encoded_image)
-        image_as_byte_array = np.fromstring(image_string, np.uint8)
-        image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
-        cv2.imshow(filepath, image)
-        cv2.waitKey(0)
-
-    if console_print:
-        print(f"Analyzing {filepath}.")
+def analyze(image_json, number_of_columns):
     data = json.loads(tesseract_specific_code(image_json))
     height, width, _ = data.pop("shape", None)  # assumes color image
 
@@ -172,7 +89,6 @@ def analyze(
     should_sanitize = True
 
     levels = Counter(box.level for box in boxes)
-    print(levels)
     LINE_LEVEL = 4
     WORD_LEVEL = 5
 
@@ -180,8 +96,6 @@ def analyze(
 
     boxes_bounding_lines = get_boxes_at_level(boxes, LINE_LEVEL)
     boxes_bounding_words = get_boxes_at_level(boxes, WORD_LEVEL)
-    print(boxes_bounding_words)
-    print(boxes_bounding_lines)
 
     all_divisions = []
     line_dicts = []
@@ -244,7 +158,6 @@ def analyze(
             comma_separated_row = ",".join(cells)
             rows_strings.append(comma_separated_row)
         else:  # 1 column
-            print(boxes_to_left)
             cell = " ".join(p.text for p in boxes_to_left)
             cells = [cell]
             rows_strings.append(cell)
@@ -258,18 +171,9 @@ def analyze(
     elif number_of_columns == 1:
         alignment_list = ["left"]
 
-    if console_print:
-        print("Printing table.")
-        print()
-        pretty_print_table(rows, alignment_list)
-        print()
-
     df = pd.DataFrame(rows, columns=None)
-
-    # Write to files
-    if write_to_file:
-        write_to_files(df, filepath)
-    return df.to_json(orient="split")
+    df_json = df.to_json(orient="split")
+    return {"df": df_json, "alignment_list": alignment_list}
 
 
 def create_box_objects_from_tesseract_bounding_boxes(data):
@@ -341,7 +245,8 @@ def find_column_alignments(all_distances):
     return alignment_list
 
 
-def write_to_files(df, filepath):
+def write_to_files(df_json, filepath):
+    df = pd.read_json(df_json, orient="split")
     parent_directory, _, filename_with_ending = filepath.rpartition("/")
     filename_without_ending, _, _ = filename_with_ending.rpartition(".")
     if parent_directory:

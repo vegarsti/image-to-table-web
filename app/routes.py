@@ -212,12 +212,7 @@ def extract_from_image(unique_id, number_of_columns, language):
     base64_encoded_image = base64.b64encode(image_content)
     image_json = {"base64_image": base64_encoded_image, "language": language}
     cleaned_filename = image.filename
-    df_json = analyze(
-        image_json=image_json,
-        number_of_columns=number_of_columns,
-        show=False,
-        filepath=cleaned_filename,
-    )
+    df_json = analyze(image_json=image_json, number_of_columns=number_of_columns)["df"]
     df = pd.read_json(df_json, orient="split")
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
     df.columns = pd.RangeIndex(start=1, stop=(len(df.columns) + 1))
