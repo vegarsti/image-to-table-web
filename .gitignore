@@ -3,12 +3,11 @@ venv
 __pycache__
 *.pyc
 uploads/*
-csvs/*
-excel_files/*
-aws_id*
 *.xlsx
 *.csv
 .idea
 logs
 .env
 app.db
+csvs
+excel_files
