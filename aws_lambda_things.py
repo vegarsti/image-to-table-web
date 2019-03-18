@@ -8,6 +8,12 @@ load_dotenv()
 lambda_client = boto3.client("lambda")
 AWS_ID = os.getenv("AWS_ID")
 
+# Put this in a file called {function_name}.py and then zip to {function_name}.zip
+def lambda_handler(event, context):
+    message = "Hello {} {}!".format(event["first_name"], event["last_name"])
+    return {"message": message}
+
+
 function_name = "HelloWorld"
 function_role = f"arn:aws:iam::{AWS_ID}:role/lambda_basic_execution"
 
