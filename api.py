@@ -37,7 +37,6 @@ def tesseract_specific_code(image_json):
     tesseract_config = (
         f"--psm 6 -l {language_config}"
     )  # assume a single uniform block of text
-    print(pytesseract.image_to_string(image, config=tesseract_config))
     data = pytesseract.image_to_data(
         image, config=tesseract_config, output_type=pytesseract.Output.DICT
     )

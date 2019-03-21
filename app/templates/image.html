@@ -5,7 +5,13 @@
 <div class="container">
     <div class="row">
         <div class="col-md-6">
-            <h1>{{ image.filename }}</h1>
+            <h1>
+                {% if rows %}
+                    Try again?
+                {% else %}
+                    Extract the table from the image
+                {% endif %}
+            </h1>
         </div>
         <div class="col-md-6">
             {% if rows %}<div class="row"><h1>Dashboard</h1></div>{% endif %}

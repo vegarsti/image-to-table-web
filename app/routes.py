@@ -5,9 +5,7 @@ from app import app, db
 from app.forms import (
     LoginForm,
     RegistrationForm,
-    EditProfileForm,
     ResetPasswordRequestForm,
-    ChangePasswordForm,
     ResetPasswordForm,
     PhotoForm,
     ColumnForm,
@@ -28,7 +26,7 @@ from aws_helpers import (
 import uuid
 from threading import Thread
 import pandas as pd
-from api import analyze
+from api import analyze, find_number_of_columns
 import base64
 import requests
 import io
@@ -46,10 +44,7 @@ def allowed_file(filename):
 def upload_image(image_contents, full_filename):
     unique_id = uuid.uuid4().hex
     filename, file_ending = filename_helper(full_filename)
-    Thread(
-        target=put_image_in_bucket,
-        args=(unique_id, image_contents, file_ending, filename),
-    ).start()
+    put_image_in_bucket(unique_id, image_contents, file_ending, filename)
     thumbnail_image_contents = thumbnail(image_contents, N=200)
     thumbnail_filename = f"{filename}_thumbnail"
     put_image_in_bucket(
@@ -59,9 +54,18 @@ def upload_image(image_contents, full_filename):
         target=put_image_in_bucket,
         args=(unique_id, image_contents, file_ending, filename),
     ).start()
-    image = Image(uuid=unique_id, user=current_user, filename=full_filename)
+    base64_encoded_image = base64.b64encode(image_contents)
+    image_json = {"base64_image": base64_encoded_image}
+    num_columns = find_number_of_columns(image_json)
+    image = Image(
+        uuid=unique_id,
+        user=current_user,
+        filename=full_filename,
+        num_columns=num_columns,
+    )
     db.session.add(image)
     db.session.commit()
+    return unique_id
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -73,10 +77,19 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        upload_image(image_contents, full_filename)
-        flash("Your image was uploaded!")
+        unique_id = upload_image(image_contents, full_filename)
+        image = (
+            Image.query.filter_by(uuid=unique_id)
+            .filter_by(user=current_user)
+            .first_or_404()
+        )
+        language = "Norwegian"
+        return extract_from_image(unique_id, image.num_columns, language)
     images = list(reversed(Image.query.filter_by(user=current_user).all()))
-    return render_template("index.html", form=form, title="Home", images=images)
+    user_has_images = len(images) > 0
+    return render_template(
+        "index.html", form=form, title="Home", user_has_images=user_has_images
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -182,7 +195,6 @@ def delete_table(unique_id):
     filename = image.filename
     delete_remote_excel(unique_id, filename)
     db.session.commit()
-    flash("Table deleted.")
     return redirect(url_for("image", unique_id=unique_id))
 
 
@@ -233,7 +245,6 @@ def extract_from_image(unique_id, number_of_columns, language):
     image.tabular = df_json
     db.session.add(image)
     db.session.commit()
-    flash("Table extracted!")
     return redirect(url_for("image", unique_id=unique_id))
 
 
@@ -291,6 +302,18 @@ def add_example_image():
         flash("The example image could not be retrieved.")
         return redirect(url_for("index"))
     image_contents = image_response.content
-    upload_image(image_contents, example_filename)
-    flash("Example image was added.")
-    return redirect(url_for("index"))
+    unique_id = upload_image(image_contents, example_filename)
+    image = (
+        Image.query.filter_by(uuid=unique_id)
+        .filter_by(user=current_user)
+        .first_or_404()
+    )
+    language = "Norwegian"
+    return extract_from_image(unique_id, image.num_columns, language)
+
+
+@app.route("/images/")
+@login_required
+def all_images():
+    images = list(reversed(Image.query.filter_by(user=current_user).all()))
+    return render_template("all_images.html", title="All images", images=images)

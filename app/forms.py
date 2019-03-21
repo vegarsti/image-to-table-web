@@ -92,7 +92,11 @@ class PhotoForm(FlaskForm):
             FileRequired(u"File was empty!"),
         ]
     )
-    submit = SubmitField(u"Upload")
+    submit = SubmitField(u"Upload and extract!")
+
+
+language_choices = [("Norwegian", "Norwegian"), ("English", "English")]
+default_language = "English"
 
 
 class ColumnForm(FlaskForm):
@@ -100,9 +104,9 @@ class ColumnForm(FlaskForm):
         label="How many columns are there in the table?", validators=[DataRequired()]
     )
     language = SelectField(
-        "In which language is the text in the table?",
-        choices=[("Norwegian", "Norwegian"), ("English", "English")],
-        default="English",
+        "Which language is the text in?",
+        choices=language_choices,
+        default=default_language,
     )
     submit = SubmitField("Extract table from image")
 
@@ -113,12 +117,12 @@ class ColumnForm(FlaskForm):
 
 class ColumnAgainForm(FlaskForm):
     columns = IntegerField(
-        label="Try again with a new number of columns?", validators=[DataRequired()]
+        label="How many columns are there?", validators=[DataRequired()]
     )
     language = SelectField(
-        "In which language is the text in the table?",
-        choices=[("Norwegian", "Norwegian"), ("English", "English")],
-        default="English",
+        "Which language is the text in?",
+        choices=language_choices,
+        default=default_language,
     )
     submit = SubmitField("Extract table from image")
 

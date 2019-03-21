@@ -63,6 +63,7 @@ class Image(db.Model):
     filename = db.Column(db.String(140), nullable=False)
     MAX_JSON_CHARACTER_COUNT = 10000
     tabular = db.Column(db.String(MAX_JSON_CHARACTER_COUNT))
+    num_columns = db.Column(db.Integer)
 
     def image_url(self):
         filename, file_ending = filename_helper(self.filename)
