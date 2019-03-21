@@ -20,3 +20,5 @@ boto3
 requests
 XlsxWriter
 Wand
+scipy
+cvhelper # check github.com/anbergem/cvhelper

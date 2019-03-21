@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
+import scipy.ndimage as snd
 
 from sanitize import sanitize
 
@@ -36,6 +37,7 @@ def tesseract_specific_code(image_json):
     tesseract_config = (
         f"--psm 6 -l {language_config}"
     )  # assume a single uniform block of text
+    print(pytesseract.image_to_string(image, config=tesseract_config))
     data = pytesseract.image_to_data(
         image, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
@@ -264,3 +266,55 @@ def write_to_files(df_json, filepath):
     df.to_csv(csv_path, header=None, index=False)
     print(f"Writing excel file {excel_path}.")
     df.to_excel(excel_path, header=None, index=False)
+
+
+def find_number_of_columns(image_json):
+    show = False
+
+    base64_encoded_image = image_json.get("base64_image")
+    image_string = base64.b64decode(base64_encoded_image)
+    image_as_byte_array = np.frombuffer(image_string, np.uint8)
+    image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    x_axis_sum = np.sum(gray, axis=0)
+    sum_image_height = 50
+    sum_image = np.zeros((sum_image_height, *x_axis_sum.shape))
+    sum_image[:] = x_axis_sum
+    cv2.normalize(sum_image, sum_image, 0, 255, cv2.NORM_MINMAX)
+    sum_image = sum_image.astype(np.uint8)
+    # sum_image = cvh.normalize(sum_image).astype(np.uint8)
+    sum_image = cv2.resize(sum_image, (400, 50), interpolation=cv2.INTER_CUBIC)
+    # sum_image = cvh.resize(sum_image, shape=(50, 400)) # Kommer snart :)
+
+    if show:
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.imshow(sum_image)
+
+    eroded = snd.grey_opening(sum_image, 11)
+
+    if show:
+        plt.figure()
+        plt.imshow(eroded)
+
+    _, otsu = cv2.threshold(eroded, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # otsu = cvh.threshold_otsu(eroded)
+    dilated_otsu = cv2.dilate(otsu, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))
+    # otsu = cvh.dilate(otsu, 3)
+    # eroded = cv.erode(otsu, cv.getStructuringElement(cv.MORPH_RECT, (35, 35)))
+    if show:
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        ax1.imshow(gray)
+        ax2.imshow(dilated_otsu)
+        plt.show()
+    dilated = dilated_otsu
+    dilated = dilated[0]
+    first_black = np.argmin(dilated)
+    last_black = dilated.shape[0] - np.argmin(dilated[::-1])
+    # clip
+    dilated = dilated[first_black:last_black]
+    diffed = np.diff(dilated)
+    num_changes = np.count_nonzero(diffed)
+    num_columns = (num_changes + 2) // 2
+    return num_columns

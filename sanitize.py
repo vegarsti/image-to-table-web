@@ -19,7 +19,7 @@ def make_cell_numerical(cell, full_dictionary):
 def sanitize(items):
     characters_to_remove = ["|", " "]
     remove_dictionary = {character: "" for character in characters_to_remove}
-    replacement_dictionary = {"—": "-"}
+    replacement_dictionary = {"—": "-", ",": "."}
     full_dictionary = {**replacement_dictionary, **remove_dictionary}
     new_items = []
     for cell in items:

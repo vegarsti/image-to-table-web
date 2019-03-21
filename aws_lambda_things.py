@@ -25,7 +25,7 @@ lambda_client.create_function(
     Code={"ZipFile": open(f"{function_name}.zip", "rb").read()},
 )
 
-
+"""
 def lambda_funcs():
     client = boto3.client("lambda")
     response = client.list_functions()
@@ -35,3 +35,4 @@ def lambda_funcs():
     resp = client.invoke(FunctionName=lambda_name, Payload=event_json)
     function_response = resp["Payload"].read()
     print(function_response)
+"""

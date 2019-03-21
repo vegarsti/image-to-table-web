@@ -180,7 +180,6 @@ def delete_table(unique_id):
     )
     image.tabular = None
     filename = image.filename
-    # Thread(target=delete_remote_excel, args=(unique_id, filename)).start()
     delete_remote_excel(unique_id, filename)
     db.session.commit()
     flash("Table deleted.")
@@ -211,7 +210,6 @@ def extract_from_image(unique_id, number_of_columns, language):
     image_content = image_response.content
     base64_encoded_image = base64.b64encode(image_content)
     image_json = {"base64_image": base64_encoded_image, "language": language}
-    cleaned_filename = image.filename
     df_json = analyze(image_json=image_json, number_of_columns=number_of_columns)["df"]
     df = pd.read_json(df_json, orient="split")
     df.index = pd.RangeIndex(start=1, stop=(len(df.index) + 1))
@@ -221,7 +219,7 @@ def extract_from_image(unique_id, number_of_columns, language):
         df.to_excel(writer, header=None, index=None)
         writer.save()
         excel_binary_data = output.getvalue()
-    filename = image.filename.rsplit(".")[0]
+        filename, _ = filename_helper(image.filename)
     Thread(
         target=put_excel_file_in_bucket, args=(unique_id, excel_binary_data, filename)
     ).start()
