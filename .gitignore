@@ -11,7 +11,5 @@ logs
 csvs
 excel_files
 uploads
-app.db
-migrations
 column_guessing_algorithm.py
 lambda-tesseract*
