@@ -7,11 +7,16 @@ from wtforms import (
     TextAreaField,
     IntegerField,
     SelectField,
+    RadioField,
 )
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from flask_wtf.file import FileField, FileRequired, FileAllowed
 from app.models import User
 from flask_uploads import UploadSet, IMAGES
+
+
+language_choices = [("English", "English"), ("Norwegian", "Norwegian")]
+default_language = "English"
 
 
 class LoginForm(FlaskForm):
@@ -87,16 +92,18 @@ photos = UploadSet("photos", IMAGES)
 
 class PhotoForm(FlaskForm):
     photo = FileField(
+        " ",
         validators=[
             FileAllowed(photos, u"Image only!"),
             FileRequired(u"File was empty!"),
-        ]
+        ],
+    )
+    language = RadioField(
+        "Which language is the text in?",
+        choices=language_choices,
+        default=default_language,
     )
     submit = SubmitField(u"Upload and extract!")
-
-
-language_choices = [("Norwegian", "Norwegian"), ("English", "English")]
-default_language = "English"
 
 
 class ColumnForm(FlaskForm):

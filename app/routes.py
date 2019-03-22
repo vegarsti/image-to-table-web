@@ -83,6 +83,8 @@ def index():
             .filter_by(user=current_user)
             .first_or_404()
         )
+        language = form.data["language"]
+        print(language)
         language = "Norwegian"
         return extract_from_image(unique_id, image.num_columns, language)
     images = list(reversed(Image.query.filter_by(user=current_user).all()))
@@ -292,11 +294,44 @@ def delete_all_images():
     return redirect(url_for("index"))
 
 
-@app.route("/add_example_image/")
+image_dicts = [
+    {
+        "thumb": "http://vegardstikbakke.com/assets/img/example1_thumb.png",
+        "language": "Norwegian",
+        "url": "http://vegardstikbakke.com/assets/img/example1.png",
+        "filename": "example1.png",
+        "index": 0,
+    },
+    {
+        "thumb": "http://vegardstikbakke.com/assets/img/example2_thumb.png",
+        "language": "Norwegian",
+        "url": "http://vegardstikbakke.com/assets/img/example2.png",
+        "filename": "example2.png",
+        "index": 1,
+    },
+    {
+        "thumb": "http://vegardstikbakke.com/assets/img/example3_thumb.png",
+        "language": "Norwegian",
+        "url": "http://vegardstikbakke.com/assets/img/example3.png",
+        "filename": "example3.png",
+        "index": 2,
+    },
+    {
+        "thumb": "http://vegardstikbakke.com/assets/img/example4_thumb.png",
+        "language": "Norwegian",
+        "url": "http://vegardstikbakke.com/assets/img/example4.png",
+        "filename": "example4.png",
+        "index": 3,
+    },
+]
+
+
+@app.route("/add_example_image/<int:index>")
 @login_required
-def add_example_image():
-    example_image_url = "http://vegardstikbakke.com/assets/img/example.png"
-    example_filename = "example.png"
+def add_example_image(index):
+    image_dict = image_dicts[index]
+    example_image_url = image_dict["url"]
+    example_filename = image_dict["filename"]
     image_response = requests.get(example_image_url)
     if not image_response.status_code == 200:
         flash("The example image could not be retrieved.")
@@ -308,7 +343,7 @@ def add_example_image():
         .filter_by(user=current_user)
         .first_or_404()
     )
-    language = "Norwegian"
+    language = image_dict["language"]
     return extract_from_image(unique_id, image.num_columns, language)
 
 
@@ -317,3 +352,11 @@ def add_example_image():
 def all_images():
     images = list(reversed(Image.query.filter_by(user=current_user).all()))
     return render_template("all_images.html", title="All images", images=images)
+
+
+@app.route("/example_images/")
+@login_required
+def example_images():
+    return render_template(
+        "example_images.html", title="Example images", images=image_dicts
+    )

@@ -4,29 +4,23 @@
 {% block app_content %}
     <div class="container">
         <div class="col-xs-12 col-sm-12 col-md-12">
-            <h1>Upload an image of a table and automatically extract the table</h1>
+            <h1>Upload an image of a table and automatically extract it</h1>
         </div>
     </div>
-    <br />
     <div class="container" style="margin-bottom: 30px;">
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <form method="POST" enctype="multipart/form-data">
-                {{ form.hidden_tag() }}
-                {{ form.photo }}
-                <br />
-                {{ form.submit(class_="btn btn-default") }}
-            </form>
+        <div class="col-xs-12 col-sm-12 col-md-12" >
+            {{ wtf.quick_form(form) }}
         </div>
     </div>
     <div class="container">
         <div class="col-xs-12 col-sm-12 col-md-12">
             <h1>
                 {% if user_has_images %}
-                    <a href="{{ url_for('all_images') }}">Or view your uploaded images</a>
-                {% else %}
-                    <h1><a href="{{ url_for('add_example_image') }}">Or try with an example image</a></h1>
+                    <a href="{{ url_for('all_images') }}">View your uploaded images</a>
                 {% endif %}
             </h1>
+            <br />
+            <h1><a href="{{ url_for('example_images') }}">Or try with an example image</a></h1>
         </div>
     </div>
 {% endblock %}

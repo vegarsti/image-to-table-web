@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12"><h1>Click the image to start extracting</h1></div>
+        </div>
+    </div>
+    <div class="container" style="margin-bottom: 100px;">
+        {% for image in images %}
+            <div class="col-xs-12 col-sm-6 col-md-4" style="padding: 10px">
+                <div class="col-xs-12 col-sm-6 col-md-12">
+                    <div class="row" style="width: 350px;">
+                        <a href="{{ url_for('add_example_image', index=image['index']) }}">
+                            <img style="border: 1px solid black; width: 100%" alt="View image" src="{{ image['thumb'] }}" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
