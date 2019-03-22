@@ -21,3 +21,4 @@ requests
 XlsxWriter
 Wand
 scipy
+uwsgi
