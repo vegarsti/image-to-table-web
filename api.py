@@ -57,10 +57,13 @@ def find_index_of_n_largest(items, n):
     indexes = []
     copied_items = [i for i in items]
     while len(indexes) < n - 1:
-        max_index = copied_items.index(max(copied_items))
-        indexes.append(max_index)
-        copied_items = [i for i in copied_items]
-        copied_items[max_index] = 0
+        if len(copied_items) == 0:
+            break
+        else:
+            max_index = copied_items.index(max(copied_items))
+            indexes.append(max_index)
+            copied_items = [i for i in copied_items]
+            copied_items[max_index] = 0
     return sorted([i + 1 for i in indexes])
 
 
