@@ -30,7 +30,7 @@ def tesseract_specific_code(image_json):
     base64_encoded_image = image_json.get("base64_image")
     language = image_json.get("language")
     image_string = base64.b64decode(base64_encoded_image)
-    image_as_byte_array = np.fromstring(image_string, np.uint8)
+    image_as_byte_array = np.frombuffer(image_string, np.uint8)
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
     language_map = {"Norwegian": "nor", "English": "eng"}
     language_config = language_map[language]
@@ -40,6 +40,7 @@ def tesseract_specific_code(image_json):
     data = pytesseract.image_to_data(
         image, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
+    print(pytesseract.image_to_string(image, config=tesseract_config))
     data["shape"] = image.shape
     return json.dumps(data)
 
@@ -48,11 +49,14 @@ def find_index_of_n_largest(items, n):
     # assume items is sorted list with positive numbers of diffs
     indexes = []
     copied_items = [i for i in items]
-    while len(indexes) < n - 1:
-        max_index = copied_items.index(max(copied_items))
-        indexes.append(max_index)
-        copied_items = [i for i in copied_items]
-        copied_items[max_index] = 0
+    try:
+        while len(indexes) < n - 1:
+            max_index = copied_items.index(max(copied_items))
+            indexes.append(max_index)
+            copied_items = [i for i in copied_items]
+            copied_items[max_index] = 0
+    except:
+        pass
     return sorted([i + 1 for i in indexes])
 
 
@@ -142,8 +146,14 @@ def analyze(image_json, number_of_columns):
                 boxes_to_right = list(
                     sorted(list(boxes_to_right), key=lambda box: box.right)
                 )
-                distance_to_right = right_point - boxes_to_left[-1].right
-                distance_to_left = boxes_to_left[0].left - left_point
+                if len(boxes_to_left) > 0:
+                    left_point_ = boxes_to_left[-1].right
+                    first_left_point = boxes_to_left[0].left
+                else:
+                    left_point_ = 0
+                    first_left_point = 0
+                distance_to_right = right_point - left_point_
+                distance_to_left = first_left_point - left_point
                 distances = (distance_to_left, distance_to_right)
                 all_distances[i].append(distances)
                 text = " ".join(p.text for p in boxes_to_left)
@@ -167,14 +177,16 @@ def analyze(image_json, number_of_columns):
         else:
             sanitized_cells = cells
         rows.append(sanitized_cells)
+    """
     if number_of_columns > 1:
         alignment_list = find_column_alignments(all_distances)
     elif number_of_columns == 1:
         alignment_list = ["left"]
+    """
 
     df = pd.DataFrame(rows, columns=None)
     df_json = df.to_json(orient="split")
-    return {"df": df_json, "alignment_list": alignment_list}
+    return {"df": df_json}  # "alignment_list": alignment_list}
 
 
 def create_box_objects_from_tesseract_bounding_boxes(data):
@@ -267,9 +279,7 @@ def write_to_files(df_json, filepath):
     df.to_excel(excel_path, header=None, index=False)
 
 
-def find_number_of_columns(image_json):
-    show = False
-
+def find_number_of_columns(image_json, show=False):
     base64_encoded_image = image_json.get("base64_image")
     image_string = base64.b64decode(base64_encoded_image)
     image_as_byte_array = np.frombuffer(image_string, np.uint8)
