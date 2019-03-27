@@ -9,7 +9,13 @@ import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+ON_COMPUTER = os.getenv("ON_COMPUTER")
+if not ON_COMPUTER == "1":
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 import scipy.ndimage as snd
 
 from sanitize import sanitize
@@ -50,14 +56,11 @@ def find_index_of_n_largest(items, n):
     # assume items is sorted list with positive numbers of diffs
     indexes = []
     copied_items = [i for i in items]
-    try:
-        while len(indexes) < n - 1:
-            max_index = copied_items.index(max(copied_items))
-            indexes.append(max_index)
-            copied_items = [i for i in copied_items]
-            copied_items[max_index] = 0
-    except:
-        pass
+    while len(indexes) < n - 1:
+        max_index = copied_items.index(max(copied_items))
+        indexes.append(max_index)
+        copied_items = [i for i in copied_items]
+        copied_items[max_index] = 0
     return sorted([i + 1 for i in indexes])
 
 
