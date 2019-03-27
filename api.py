@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 import scipy.ndimage as snd
 
 from sanitize import sanitize
