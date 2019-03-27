@@ -4,7 +4,7 @@ import pandas as pd
 import base64
 import cv2
 import numpy as np
-from api import analyze, image_to_base64_json, write_to_files
+from api import analyze, image_to_base64_json, write_to_files, find_number_of_columns
 
 try:
     from PIL import Image
@@ -34,8 +34,12 @@ def align_table(table, align):
     new_table = copy_nested_list(table)
     for row in new_table:
         for cell_num, cell in enumerate(row):
+            try:
+                current_alignment = align[cell_num]
+            except:
+                current_alignment = "<"
             row[cell_num] = "{:{align}{width}}".format(
-                cell, align=align[cell_num], width=widths[cell_num]
+                cell, align=current_alignment, width=widths[cell_num]
             )
     return new_table
 
@@ -71,9 +75,14 @@ def join_formatted_lines(lines):
     return "\n".join(lines)
 
 
-def pretty_print_table(table, alignment_list):
+def pretty_print_table(table, alignment_list=None):
     alignment_operators = {"left": "<", "right": ">"}
-    alignment_options = [alignment_operators[alignment] for alignment in alignment_list]
+    if alignment_list is None:
+        alignment_options = None
+    else:
+        alignment_options = [
+            alignment_operators[alignment] for alignment in alignment_list
+        ]
     justified_table = align_table(table, alignment_options)
     padded_table = add_padding(justified_table, padding=1)
     lines = join_columns_with_divider(padded_table, decorator=" ")
@@ -85,7 +94,7 @@ def pretty_print_table(table, alignment_list):
 def show_image(image_json):
     base64_encoded_image = image_json.get("base64_image")
     image_string = base64.b64decode(base64_encoded_image)
-    image_as_byte_array = np.fromstring(image_string, np.uint8)
+    image_as_byte_array = np.frombuffer(image_string, np.uint8)
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
     cv2.imshow("Image", image)
     cv2.waitKey(0)
@@ -110,17 +119,19 @@ parser.add_argument("--show", action="store_true", help="show all bounding boxes
 args = parser.parse_args()
 
 image_json = image_to_base64_json(args.filepath)
+print(find_number_of_columns(image_json, show=True))
+print("Columns")
 language = "English"
 image_json["language"] = language
 analyzed_results = analyze(image_json=image_json, number_of_columns=args.columns)
 df_json = analyzed_results["df"]
-alignment_list = analyzed_results["alignment_list"]
+# alignment_list = analyzed_results["alignment_list"]
 df = pd.read_json(df_json, orient="split")
 rows = df.values.tolist()
 
 print("Printing table.")
 print()
-pretty_print_table(rows, alignment_list)
+pretty_print_table(rows)  # , alignment_list)
 print()
 # write_to_files(df_json, args.filepath)
 show_image(image_json)
