@@ -51,6 +51,7 @@ def resize_json_wrapper(image_json):
     resized_image_as_byte_array = resize_image(image_as_byte_array)
     base64_encoded_resized_image = base64.b64encode(resized_image_as_byte_array)
     image_json["base64_image"] = base64_encoded_resized_image
+    return image_json
 
 
 def tesseract_specific_code(image_json):
@@ -113,10 +114,6 @@ def partition(items, predicate=bool):
 
 
 def analyze(image_json, number_of_columns):
-    # preprocessing steps, e.g., reshaping
-    image_json = resize_json_wrapper(image_json)
-    # end preprocessing
-
     data = json.loads(tesseract_specific_code(image_json))
     height, width, _ = data.pop("shape", None)  # assumes color image
 

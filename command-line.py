@@ -4,7 +4,13 @@ import pandas as pd
 import base64
 import cv2
 import numpy as np
-from api import analyze, image_to_base64_json, write_to_files, find_number_of_columns
+from api import (
+    analyze,
+    image_to_base64_json,
+    write_to_files,
+    find_number_of_columns,
+    resize_json_wrapper,
+)
 
 try:
     from PIL import Image
@@ -114,20 +120,24 @@ def positive_integer(n):
 
 
 parser.add_argument("filepath", type=str, help="path to image file")
-parser.add_argument("columns", type=positive_integer, help="number of columns")
 parser.add_argument("--show", action="store_true", help="show all bounding boxes")
 args = parser.parse_args()
 
 image_json = image_to_base64_json(args.filepath)
-print(find_number_of_columns(image_json, show=True))
+image_json = resize_json_wrapper(image_json)
+guessed_number_of_columns = find_number_of_columns(image_json, show=args.show)
+print(guessed_number_of_columns)
 print("Columns")
 language = "English"
 image_json["language"] = language
-analyzed_results = analyze(image_json=image_json, number_of_columns=args.columns)
+analyzed_results = analyze(
+    image_json=image_json, number_of_columns=guessed_number_of_columns
+)
 df_json = analyzed_results["df"]
 # alignment_list = analyzed_results["alignment_list"]
 df = pd.read_json(df_json, orient="split")
 rows = df.values.tolist()
+print(rows)
 
 print("Printing table.")
 print()

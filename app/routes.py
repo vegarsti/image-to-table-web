@@ -2,6 +2,7 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.urls import url_parse
 from app import app, db
+import numpy as np
 from app.forms import (
     LoginForm,
     RegistrationForm,
@@ -77,7 +78,8 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        resized_image_contents = resize_image(image_contents)
+        image_contents_as_array = np.frombuffer(image_contents, np.uint8)
+        resized_image_contents = resize_image(image_contents_as_array)
         unique_id = upload_image(resized_image_contents, full_filename)
         image = (
             Image.query.filter_by(uuid=unique_id)
