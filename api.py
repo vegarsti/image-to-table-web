@@ -33,6 +33,22 @@ def image_to_base64_json(filepath):
     return image_json
 
 
+def resize_image(image_json):
+    base64_encoded_image = image_json.get("base64_image")
+    language = image_json.get("language")
+    image_string = base64.b64decode(base64_encoded_image)
+    image_as_byte_array = np.frombuffer(image_string, np.uint8)
+    image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_COLOR)
+    height, width, _ = image.shape
+    factor = min(1, float(1024.0 / width))
+    new_size = int(factor * width), int(factor * height)
+    cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
+    byte_image = cv2.imencode(".png", image)[1].tostring()
+    base64_encoded_resized_image = base64.b64encode(byte_image)
+    image_json["base64_image"] = base64_encoded_resized_image
+    return image_json
+
+
 def tesseract_specific_code(image_json):
     base64_encoded_image = image_json.get("base64_image")
     language = image_json.get("language")
@@ -93,6 +109,10 @@ def partition(items, predicate=bool):
 
 
 def analyze(image_json, number_of_columns):
+    # preprocessing steps, e.g., reshaping
+    image_json = resize_image(image_json)
+    # end preprocessing
+
     data = json.loads(tesseract_specific_code(image_json))
     height, width, _ = data.pop("shape", None)  # assumes color image
 
@@ -168,8 +188,12 @@ def analyze(image_json, number_of_columns):
                 boxes_to_left = boxes_to_right
                 left_point = right_point
             right_point = width
-            distance_to_right = right_point - boxes_to_left[-1].right
-            distance_to_left = boxes_to_left[0].left - left_point
+            if len(boxes_to_left) > 0:
+                distance_to_right = right_point - boxes_to_left[-1].right
+                distance_to_left = boxes_to_left[0].left - left_point
+            else:
+                distance_to_right = right_point
+                distance_to_left = 0
             distances = (distance_to_left, distance_to_right)
             all_distances[(number_of_columns - 1)].append(distances)
             cells.append(" ".join(p.text for p in boxes_to_left))
