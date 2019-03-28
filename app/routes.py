@@ -26,7 +26,7 @@ from aws_helpers import (
 import uuid
 from threading import Thread
 import pandas as pd
-from api import analyze, find_number_of_columns
+from api import analyze, find_number_of_columns, resize_image
 import base64
 import requests
 import io
@@ -77,7 +77,8 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        unique_id = upload_image(image_contents, full_filename)
+        resized_image_contents = resize_image(image_contents)
+        unique_id = upload_image(resized_image_contents, full_filename)
         image = (
             Image.query.filter_by(uuid=unique_id)
             .filter_by(user=current_user)

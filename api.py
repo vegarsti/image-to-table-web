@@ -33,20 +33,24 @@ def image_to_base64_json(filepath):
     return image_json
 
 
-def resize_image(image_json):
-    base64_encoded_image = image_json.get("base64_image")
-    language = image_json.get("language")
-    image_string = base64.b64decode(base64_encoded_image)
-    image_as_byte_array = np.frombuffer(image_string, np.uint8)
+def resize_image(image_as_byte_array):
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_COLOR)
     height, width, _ = image.shape
     factor = min(1, float(1024.0 / width))
     new_size = int(factor * width), int(factor * height)
     cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
-    byte_image = cv2.imencode(".png", image)[1].tostring()
-    base64_encoded_resized_image = base64.b64encode(byte_image)
+    resized_image_as_byte_array = cv2.imencode(".png", image)[1].tostring()
+    return resized_image_as_byte_array
+
+
+def resize_json_wrapper(image_json):
+    base64_encoded_image = image_json.get("base64_image")
+    language = image_json.get("language")
+    image_string = base64.b64decode(base64_encoded_image)
+    image_as_byte_array = np.frombuffer(image_string, np.uint8)
+    resized_image_as_byte_array = resize_image(image_as_byte_array)
+    base64_encoded_resized_image = base64.b64encode(resized_image_as_byte_array)
     image_json["base64_image"] = base64_encoded_resized_image
-    return image_json
 
 
 def tesseract_specific_code(image_json):
@@ -110,7 +114,7 @@ def partition(items, predicate=bool):
 
 def analyze(image_json, number_of_columns):
     # preprocessing steps, e.g., reshaping
-    image_json = resize_image(image_json)
+    image_json = resize_json_wrapper(image_json)
     # end preprocessing
 
     data = json.loads(tesseract_specific_code(image_json))
