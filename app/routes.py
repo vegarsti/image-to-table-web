@@ -80,15 +80,10 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        pil_image = PILImage.open(io.BytesIO(image_contents))
-        print(pil_image.size)
-
         image_as_byte_array = np.frombuffer(image_contents, np.uint8)
         resized_image_as_byte_array = resize_image(image_as_byte_array)
-        # resized_image_contents = resized_image_as_byte_array.tobytes()
 
         pil_image = PILImage.open(io.BytesIO(resized_image_as_byte_array))
-        print(pil_image.size)
 
         with io.BytesIO() as output:
             pil_image.save(
@@ -103,7 +98,6 @@ def index():
             .first_or_404()
         )
         language = form.data["language"]
-        language = "Norwegian"
         return extract_from_image(unique_id, image.num_columns, language)
     images = list(reversed(Image.query.filter_by(user=current_user).all()))
     user_has_images = len(images) > 0

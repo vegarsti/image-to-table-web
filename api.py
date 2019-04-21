@@ -45,10 +45,7 @@ def resize_image(image_as_byte_array):
     height, width, _ = image.shape
     factor = min(1, float(MAX_WIDTH / width))
     new_size = int(factor * width), int(factor * height)
-    print(new_size)
-    print(image.shape)
     image = cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
-    print(image.shape)
     resized_image_as_byte_array = cv2.imencode(".png", image)[1].tostring()
     return resized_image_as_byte_array
 
@@ -58,8 +55,6 @@ def tesseract_specific_code(image_json):
     language = image_json.get("language")
     image_string = base64.b64decode(base64_encoded_image)
 
-    # image_as_byte_array = np.frombuffer(image_string, np.uint8)
-    # image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
     image = Image.open(io.BytesIO(image_string))
     image.info["dpi"] = (DPI, DPI)
 
@@ -78,7 +73,6 @@ def tesseract_specific_code(image_json):
     data = pytesseract.image_to_data(
         otsu, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
-    # print(pytesseract.image_to_string(otsu, config=tesseract_config))
     data["shape"] = image.size
     return json.dumps(data)
 
