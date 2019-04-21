@@ -22,3 +22,4 @@ XlsxWriter
 Wand
 scipy
 uwsgi
+opencv-wrapper

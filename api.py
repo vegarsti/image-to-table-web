@@ -4,7 +4,7 @@ import json
 import statistics
 import sys
 from collections import namedtuple, Counter
-import cvhelper as cvh
+import opencv_wrapper as cvh
 import io
 
 import cv2
