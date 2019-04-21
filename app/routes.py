@@ -2,7 +2,6 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.urls import url_parse
 from app import app, db
-import numpy as np
 from app.forms import (
     LoginForm,
     RegistrationForm,
@@ -32,7 +31,10 @@ import base64
 import requests
 import io
 from image_crop import thumbnail
+from PIL import Image as PILImage
+import numpy as np
 
+DPI = 300
 
 photos = UploadSet("photos", IMAGES)
 
@@ -78,16 +80,29 @@ def index():
         f = form.photo.data
         full_filename = secure_filename(f.filename)
         image_contents = f.read()
-        image_contents_as_array = np.frombuffer(image_contents, np.uint8)
-        resized_image_contents = resize_image(image_contents_as_array)
-        unique_id = upload_image(resized_image_contents, full_filename)
+        pil_image = PILImage.open(io.BytesIO(image_contents))
+        print(pil_image.size)
+
+        image_as_byte_array = np.frombuffer(image_contents, np.uint8)
+        resized_image_as_byte_array = resize_image(image_as_byte_array)
+        # resized_image_contents = resized_image_as_byte_array.tobytes()
+
+        pil_image = PILImage.open(io.BytesIO(resized_image_as_byte_array))
+        print(pil_image.size)
+
+        with io.BytesIO() as output:
+            pil_image.save(
+                output, format="PNG", dpi=(DPI, DPI)
+            )  # 300*300 DPI is best for OCR
+            image_contents = output.getvalue()
+
+        unique_id = upload_image(image_contents, full_filename)
         image = (
             Image.query.filter_by(uuid=unique_id)
             .filter_by(user=current_user)
             .first_or_404()
         )
         language = form.data["language"]
-        print(language)
         language = "Norwegian"
         return extract_from_image(unique_id, image.num_columns, language)
     images = list(reversed(Image.query.filter_by(user=current_user).all()))

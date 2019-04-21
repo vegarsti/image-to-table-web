@@ -4,6 +4,8 @@ import json
 import statistics
 import sys
 from collections import namedtuple, Counter
+import cvhelper as cvh
+import io
 
 import cv2
 import numpy as np
@@ -12,6 +14,8 @@ import pytesseract
 import os
 from dotenv import load_dotenv
 
+from PIL import Image
+
 load_dotenv()
 ON_COMPUTER = os.getenv("ON_COMPUTER")
 if not ON_COMPUTER == "1":
@@ -19,6 +23,8 @@ if not ON_COMPUTER == "1":
 import scipy.ndimage as snd
 
 from sanitize import sanitize
+
+DPI = 300
 
 
 def image_to_base64_json(filepath):
@@ -34,42 +40,46 @@ def image_to_base64_json(filepath):
 
 
 def resize_image(image_as_byte_array):
+    MAX_WIDTH = 600
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_COLOR)
     height, width, _ = image.shape
-    factor = min(1, float(1024.0 / width))
+    factor = min(1, float(MAX_WIDTH / width))
     new_size = int(factor * width), int(factor * height)
-    cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
+    print(new_size)
+    print(image.shape)
+    image = cv2.resize(image, new_size, interpolation=cv2.INTER_CUBIC)
+    print(image.shape)
     resized_image_as_byte_array = cv2.imencode(".png", image)[1].tostring()
     return resized_image_as_byte_array
-
-
-def resize_json_wrapper(image_json):
-    base64_encoded_image = image_json.get("base64_image")
-    language = image_json.get("language")
-    image_string = base64.b64decode(base64_encoded_image)
-    image_as_byte_array = np.frombuffer(image_string, np.uint8)
-    resized_image_as_byte_array = resize_image(image_as_byte_array)
-    base64_encoded_resized_image = base64.b64encode(resized_image_as_byte_array)
-    image_json["base64_image"] = base64_encoded_resized_image
-    return image_json
 
 
 def tesseract_specific_code(image_json):
     base64_encoded_image = image_json.get("base64_image")
     language = image_json.get("language")
     image_string = base64.b64decode(base64_encoded_image)
-    image_as_byte_array = np.frombuffer(image_string, np.uint8)
-    image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
+
+    # image_as_byte_array = np.frombuffer(image_string, np.uint8)
+    # image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
+    image = Image.open(io.BytesIO(image_string))
+    image.info["dpi"] = (DPI, DPI)
+
+    try:
+        open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        gray = cvh.bgr2gray(open_cv_image)
+    except:
+        gray = np.array(image)
+    otsu = cvh.threshold_otsu(gray)
+
     language_map = {"Norwegian": "nor", "English": "eng"}
     language_config = language_map[language]
     tesseract_config = (
         f"--psm 6 -l {language_config}"
     )  # assume a single uniform block of text
     data = pytesseract.image_to_data(
-        image, config=tesseract_config, output_type=pytesseract.Output.DICT
+        otsu, config=tesseract_config, output_type=pytesseract.Output.DICT
     )
-    print(pytesseract.image_to_string(image, config=tesseract_config))
-    data["shape"] = image.shape
+    # print(pytesseract.image_to_string(otsu, config=tesseract_config))
+    data["shape"] = image.size
     return json.dumps(data)
 
 
@@ -115,7 +125,7 @@ def partition(items, predicate=bool):
 
 def analyze(image_json, number_of_columns):
     data = json.loads(tesseract_specific_code(image_json))
-    height, width, _ = data.pop("shape", None)  # assumes color image
+    height, width = data.pop("shape", None)  # assumes color image
 
     boxes = create_box_objects_from_tesseract_bounding_boxes(data)
 
@@ -316,8 +326,12 @@ def find_number_of_columns(image_json, show=False):
     image_string = base64.b64decode(base64_encoded_image)
     image_as_byte_array = np.frombuffer(image_string, np.uint8)
     image = cv2.imdecode(image_as_byte_array, cv2.IMREAD_UNCHANGED)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    x_axis_sum = np.sum(gray, axis=0)
+    try:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    except:
+        gray = image
+    otsu = cvh.threshold_otsu(gray)
+    x_axis_sum = np.sum(otsu, axis=0)
     sum_image_height = 50
     sum_image = np.zeros((sum_image_height, *x_axis_sum.shape))
     sum_image[:] = x_axis_sum
